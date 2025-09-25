@@ -1,48 +1,137 @@
-# Team-BOOZE Inventory System (MVP)
+# Team BOOZE Inventory System
 
-Simple CLI-driven inventory and sales tracker.
+## Project Overview
 
-## Structure
+This repository contains the source code for the Liquor Store Inventory Management System, a project for the Software Engineering 3 module.
 
-```
-app/
-  __init__.py
-  models.py
-  inventory_manager.py
-  sales_processor.py
-  reporter.py
-tests/
-  test_models.py
-  test_inventory.py
-main.py
-```
+The system is designed to provide core inventory tracking, product management, and sales processing for a small-to-medium-sized liquor store. Development follows an agile process, emphasizing code quality, thorough testing, and continuous integration/continuous delivery (CI/CD).
 
-## Setup
+---
 
+## Features
+
+The **Minimum Viable Product (MVP)** is structured around four core functionalities:
+
+-   **Product Management**: Functions to add, view, and update products in the catalog.
+-   **Inventory Tracking**: Logic to manage stock levels (receiving new shipments, logging losses).
+-   **Sales Transaction Management**: Processing sales and recording transaction history.
+-   **Reporting & Analytics**: Generating basic reports, such as low-stock and total inventory value.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+-   Python 3.x
+-   `pip` for package management
+-   A local environment for database (SQLite for MVP).
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone [https://github.com/chagall04/Team-BOOZE-Inventory-System.git](https://github.com/chagall04/Team-BOOZE-Inventory-System.git)
+    cd Team-BOOZE-Inventory-System
+    ```
+
+2.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Usage
+
+The application currently uses a Command Line Interface (CLI) as the presentation layer.
+
+Run the main application file:
 ```bash
-python -m venv .venv
-.venv\\Scripts\\activate  # Windows PowerShell
-pip install -r requirements.txt
-```
+python main.py
 
-## Usage
+### Documentation and Project Management
 
+    Jira Board (Backlog & Sprints): [https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiNDZmYjViNzg5Nzg3NDY1NWJjZTg2NTk0ZTZiNTQ1YWQiLCJwIjoiaiJ9](https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog)
+
+    Confluence Wiki (Design & Reports): [https://software-engineering-project-2025-sem1.atlassian.net/wiki/x/B4AB](https://software-engineering-project-2025-sem1.atlassian.net/wiki/spaces/TITS/overview?homepageId=66124](https://software-engineering-project-2025-sem1.atlassian.net/wiki/spaces/TITS/overview?homepageId=66124)
+
+        This includes the Architecture & Design Document and Requirements Package.
+
+I can rewrite your GitHub `README.md` to be fully up-to-date with your four-person team, four core features, and correct documentation links. I've ensured the format is clean and professional for your repository.
+
+-----
+
+````markdown:readme:readme.md
+# Team BOOZE Inventory System
+
+## Project Overview
+
+This repository contains the source code for the Liquor Store Inventory Management System, a project for the Software Engineering 3 module.
+
+The system is designed to provide core inventory tracking, product management, and sales processing for a small-to-medium-sized liquor store. Development follows an agile process, emphasizing code quality, thorough testing, and continuous integration/continuous delivery (CI/CD).
+
+---
+
+## Features
+
+The **Minimum Viable Product (MVP)** is structured around four core functionalities:
+
+-   **Product Management**: Functions to add, view, and update products in the catalog.
+-   **Inventory Tracking**: Logic to manage stock levels (receiving new shipments, logging losses).
+-   **Sales Transaction Management**: Processing sales and recording transaction history.
+-   **Reporting & Analytics**: Generating basic reports, such as low-stock and total inventory value.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+-   Python 3.x
+-   `pip` for package management
+-   A local environment for database (SQLite for MVP).
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone [https://github.com/chagall04/Team-BOOZE-Inventory-System.git](https://github.com/chagall04/Team-BOOZE-Inventory-System.git)
+    cd Team-BOOZE-Inventory-System
+    ```
+
+2.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Usage
+
+The application currently uses a Command Line Interface (CLI) as the presentation layer.
+
+Run the main application file:
 ```bash
-python main.py --help
+python main.py
+````
+
+*(Detailed usage instructions and commands will be added as the CLI is fully developed.)*
+
+-----
+
+## Documentation and Project Management
+
+  - **Jira Board (Backlog & Sprints)**: [https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiNDZmYjViNzg5Nzg3NDY1NWJjZTg2NTk0ZTZiNTQ1YWQiLCJwIjoiaiJ9](https://www.google.com/search?q=https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/summary%3FatlOrigin%3DeyJpIjoiNDZmYjViNzg5Nzg3NDY1NWJjZTg2NTk0ZTZiNTQ1YWQiLCJwIjoiaiJ9)
+  - **Confluence Wiki (Design & Reports)**: [https://software-engineering-project-2025-sem1.atlassian.net/wiki/x/B4AB](https://software-engineering-project-2025-sem1.atlassian.net/wiki/x/B4AB)
+      * This includes the Architecture & Design Document and Requirements Package.
+
+-----
+
+## Contributors
+
+  - Charlie Gallagher
+  - Lucy O'Connor
+  - Séan Bardon
+  - Sara Larkim
+
+<!-- end list -->
+
 ```
-
-Examples:
-
-```bash
-python main.py add-product --id 1 --name "Beer" --price 3.5
-python main.py stock --id 1 --delta 10
-python main.py sell --items 1:2
-python main.py report inventory
 ```
-
-## Testing
-
-```bash
-pytest -q
-```
-
