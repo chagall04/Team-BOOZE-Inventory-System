@@ -55,8 +55,8 @@ python main.py
 
 ## Documentation and Project Management
 
-  - **Jira Board (Backlog & Sprints)**: [https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/summary?atlOrigin=eyJpIjoiNDZmYjViNzg5Nzg3NDY1NWJjZTg2NTk0ZTZiNTQ1YWQiLCJwIjoiaiJ9](https://www.google.com/search?q=https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/summary%3FatlOrigin%3DeyJpIjoiNDZmYjViNzg5Nzg3NDY1NWJjZTg2NTk0ZTZiNTQ1YWQiLCJwIjoiaiJ9)
-  - **Confluence Wiki (Design & Reports)**: [https://software-engineering-project-2025-sem1.atlassian.net/wiki/x/B4AB](https://software-engineering-project-2025-sem1.atlassian.net/wiki/x/B4AB)
+  - **Jira Board (Backlog & Sprints)**: https://software-engineering-project-2025-sem1.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog
+  - **Confluence Wiki (Design & Reports)**: https://software-engineering-project-2025-sem1.atlassian.net/wiki/spaces/TITS/overview?homepageId=66124
       * This includes the Project Overview, Architecture & Design Document & Requirements Package.
 
 -----
