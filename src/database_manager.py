@@ -4,15 +4,18 @@ import sqlite3
 DB_NAME = "inventory.db"
 
 def get_db_connection():
-    """Establishes a connection to the database."""
+    """connect to database"""
     conn = sqlite3.connect(DB_NAME)
-    # Return rows as dictionaries instead of tuples
+    # return rows as dictionaries
     conn.row_factory = sqlite3.Row
     return conn
 
-# --- Auth Functions (SCRUM-17) ---
+# auth functions (scrum-17)
 def get_user_by_username(username):
-    """Fetches a user's hashed password and role."""
+    """
+    get user hash and role
+    part of scrum-18
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT password_hash, role FROM users WHERE username = ?", (username,))
@@ -23,27 +26,24 @@ def get_user_by_username(username):
         return {"hash": user_data["password_hash"], "role": user_data["role"]}
     return None
 
-# --- Product Management Functions (SCRUM-5) ---
-# TODO (Lucy): Implement SCRUM-24: db.insert_product(data)
-# This function should take product data (name, brand, price, etc.)
-# and execute an SQL INSERT statement on the 'booze' table.
+# product management functions (scrum-5)
+# todo (lucy): implement scrum-24: db.insert_product(data)
+# function takes product data and executes sql insert
 
-# --- Inventory Tracking Functions (SCRUM-9 & SCRUM-11) ---
-# TODO (Séan): Implement SCRUM-28: db.adjust_stock(product_id, quantity)
-# This function should take a product_id and a new_quantity
-# and execute an SQL UPDATE statement:
-# "UPDATE booze SET quantity_on_hand = ? WHERE id = ?"
+# inventory tracking functions (scrum-9 & scrum-11)
+# todo (séan): implement scrum-28: db.adjust_stock(product_id, quantity)
+# function takes product_id and new_quantity
+# executes sql update: "update booze set quantity_on_hand = ? where id = ?"
 
-# TODO (Séan): Implement SCRUM-29: db.get_stock_by_id(product_id)
-# This function should take a product_id and
-# "SELECT name, quantity_on_hand FROM booze WHERE id = ?"
-# It will be used by both SCRUM-9 (to get current stock) 
-# and SCRUM-11 (to display stock).
+# todo (séan): implement scrum-29: db.get_stock_by_id(product_id)
+# function takes product_id
+# executes sql: "select name, quantity_on_hand from booze where id = ?"
+# used by scrum-9 (get current stock) and scrum-11 (display stock)
 
-# --- Sales Transaction Functions (SCRUM-12) ---
-# TODO (Sara): Implement SCRUM-36: db.start_transaction() and db.log_item_sale()
-# You will need functions to:
-# 1. Create a new row in 'transactions' and return the new 'transaction_id'.
-# 2. Create a new row in 'transaction_items' for each item in the sale.
-# 3. A function to get 'quantity_on_hand' for a product (for SCRUM-38 check).
-#    (You can reuse Séan's SCRUM-29 function for this).
+# sales transaction functions (scrum-12)
+# todo (sara): implement scrum-36: db.start_transaction() and db.log_item_sale()
+# need functions to:
+# 1. create new row in 'transactions' and return transaction_id
+# 2. create new row in 'transaction_items' for each item
+# 3. function to get 'quantity_on_hand' for product (scrum-38 check)
+#    (can reuse séan's scrum-29 function)

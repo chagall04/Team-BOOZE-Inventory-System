@@ -1,9 +1,10 @@
 # init_db.py
 import sqlite3
+import bcrypt
 
 DB_NAME = "inventory.db"
 
-# Sample data for the 'booze' table
+# sample data for booze table
 booze_data = [
     ('Jameson Original', 'Jameson', 'Whiskey', 40.0, 700, 'Ireland', 30.50, 50, 'The classic, super smooth, triple-distilled Irish whiskey.'),
     ('Guinness Draught', 'Guinness', 'Stout', 4.2, 500, 'Ireland', 2.80, 200, 'The iconic Irish dry stout. Sold per 500ml can.'),
@@ -25,14 +26,27 @@ booze_data = [
 conn = sqlite3.connect(DB_NAME)
 cursor = conn.cursor()
 
-# Drop tables to ensure a fresh start
+# drop tables for fresh start
 print("Dropping old tables...")
 cursor.execute("DROP TABLE IF EXISTS transaction_items;")
 cursor.execute("DROP TABLE IF EXISTS transactions;")
 cursor.execute("DROP TABLE IF EXISTS booze;")
-cursor.execute("DROP TABLE IF EXISTS users;") # In case it exists from old versions
+cursor.execute("DROP TABLE IF EXISTS users;")
 
-# Create booze table
+# scrum-19: create users table
+print("Creating 'users' table...")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('Manager', 'Clerk')),
+    image TEXT
+);
+""")
+
+# create booze table
 print("Creating 'booze' table...")
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS booze (
@@ -49,7 +63,7 @@ CREATE TABLE IF NOT EXISTS booze (
 );
 """)
 
-# Create transactions table
+# create transactions table
 print("Creating 'transactions' table...")
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS transactions (
@@ -59,7 +73,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 """)
 
-# Create transaction_items table
+# create transaction_items table
 print("Creating 'transaction_items' table...")
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS transaction_items (
@@ -73,7 +87,26 @@ CREATE TABLE IF NOT EXISTS transaction_items (
 );
 """)
 
-# Populate the 'booze' table
+# scrum-20: insert default users
+try:
+    print("Adding default users...")
+    # hash passwords using bcrypt
+    manager_pass = bcrypt.hashpw(b"manager123", bcrypt.gensalt())
+    clerk_pass = bcrypt.hashpw(b"clerk123", bcrypt.gensalt())
+    
+    # insert manager
+    cursor.execute("INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)", 
+                   ("Liam McNamara", "manager", manager_pass.decode('utf-8'), "Manager"))
+                   
+    # insert clerk
+    cursor.execute("INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)", 
+                   ("Fiona Breen", "clerk", clerk_pass.decode('utf-8'), "Clerk"))
+                   
+    print("Default 'manager' (pass: manager123) and 'clerk' (pass: clerk123) added.")
+except sqlite3.IntegrityError:
+    print("Default users already exist.")
+
+# populate booze table
 try:
     print(f"Adding {len(booze_data)} sample products...")
     cursor.executemany("""
@@ -88,4 +121,4 @@ except sqlite3.IntegrityError:
 conn.commit()
 conn.close()
 
-print(f"Database '{DB_NAME}' has been successfully initialized (no users created).")
+print(f"Database '{DB_NAME}' has been successfully initialized.")
