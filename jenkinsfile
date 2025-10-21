@@ -1,41 +1,81 @@
 // Jenkinsfile
 pipeline {
-    agent any // Run on any available Jenkins agent
+    agent any // Run on any Jenkins node
+
+    environment {
+        // MUST MATCH the SonarQube Server name from Jenkins > System
+        SONAR_SERVER = 'SonarCloud' 
+    }
+
+    // Tools defined in Jenkins > Tools
+    tools {
+        // MUST MATCH JDK name from Jenkins > Tools
+        jdk 'jdk-21'     
+        // MUST MATCH NodeJS name from Jenkins > Tools
+        nodejs 'node-20' 
+    }
 
     stages {
         stage('1. Checkout Code') {
             steps {
-                // Clone the repository
-                git 'https://github.com/your-username/your-repo-name.git'
+                // Clones your GitHub repo
+                // Make sure your repo URL is correct here!
+                git 'https://github.com/chagall04/Team-BOOZE-Inventory-System.git' 
             }
         }
         
         stage('2. Install Dependencies') {
             steps {
-                // Install packages from requirements.txt
-                sh 'pip install -r requirements.txt'
+                // Installs pytest, pylint, bcrypt etc. using pip
+                bat 'pip install -r requirements.txt'
             }
         }
         
         stage('3. Run Linter (Pylint)') {
             steps {
-                // Run pylint on your source folder
-                sh 'pylint src/ || true'
+                // Creates pylint-report.txt for SonarCloud
+                // '|| exit 0' prevents build failure on linting issues
+                bat 'pylint src/ > pylint-report.txt || exit 0'
             }
         }
         
-        stage('4. Run Unit Tests') {
+        stage('4. Run Unit Tests & Coverage') {
             steps {
-                // Run pytest. It won't find any tests yet, but that's ok.
-                sh 'pytest'
+                // Creates coverage.xml for SonarCloud
+                bat 'pytest --cov=src --cov-report=xml'
+            }
+        }
+        
+        stage('5. SonarCloud Analysis') {
+            steps {
+                // Uses the SonarQube environment from Jenkins > System
+                withSonarQubeEnv(SONAR_SERVER) {
+                    // Gets the path to the SonarScanner tool
+                    // MUST MATCH SonarScanner name from Jenkins > Tools
+                    def scannerHome = tool 'SonarScanner-Latest' 
+                    // Run scanner using 'bat' for Windows
+                    // Replace YOUR_PROJECT_KEY and YOUR_ORG_KEY!
+                    bat """
+                        "${scannerHome}/bin/sonar-scanner.bat" ^
+                          -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
+                          -Dsonar.organization=chagall04 ^
+                          -Dsonar.sources=src ^
+                          -Dsonar.host.url=https://sonarcloud.io ^
+                          -Dsonar.login=%SONAR_TOKEN% ^
+                          -Dsonar.python.coverage.reportPaths=coverage.xml ^
+                          -Dsonar.python.pylint.reportPaths=pylint-report.txt
+                    """
+                }
             }
         }
     }
     
     post {
+        // Runs after all stages
         always {
-            // Clean up the workspace to save space
+            // Clean up files from the Jenkins workspace
             cleanWs()
+            echo 'Pipeline finished.'
         }
     }
 }
