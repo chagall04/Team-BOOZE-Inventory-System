@@ -1,3 +1,9 @@
-# Minimal dependencies for development/testing
-pytest>=8.0.0
+# For password hashing
+bcrypt
 
+# For testing and coverage reports
+pytest
+pytest-cov
+
+# For static code analysis (linting)
+pylint
