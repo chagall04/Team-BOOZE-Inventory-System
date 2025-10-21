@@ -1,0 +1,41 @@
+// Jenkinsfile
+pipeline {
+    agent any // Run on any available Jenkins agent
+
+    stages {
+        stage('1. Checkout Code') {
+            steps {
+                // Clone the repository
+                git 'https://github.com/your-username/your-repo-name.git'
+            }
+        }
+        
+        stage('2. Install Dependencies') {
+            steps {
+                // Install packages from requirements.txt
+                sh 'pip install -r requirements.txt'
+            }
+        }
+        
+        stage('3. Run Linter (Pylint)') {
+            steps {
+                // Run pylint on your source folder
+                sh 'pylint src/ || true'
+            }
+        }
+        
+        stage('4. Run Unit Tests') {
+            steps {
+                // Run pytest. It won't find any tests yet, but that's ok.
+                sh 'pytest'
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Clean up the workspace to save space
+            cleanWs()
+        }
+    }
+}
