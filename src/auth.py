@@ -1,14 +1,31 @@
 # src/auth.py
-# This file is for User Story SCRUM-17
-# Owned by: Charlie Gallagher
+# user story scrum-17
+# owned by: charlie gallagher
 
-# This module will contain the business logic for authentication.
-# It will sit between the app.py (Presentation) and database_manager.py (Data) layers.
+# authentication business logic
+# sits between app.py (presentation) and database_manager.py (data)
 
-# TODO (Charlie): Implement SCRUM-21:
-# This file will contain the main 'login(username, password)' function.
-# It will:
-# 1. Call a new 'get_user_by_username' function from database_manager.py.
-# 2. Get the hashed password from the database.
-# 3. Use 'bcrypt.checkpw' to compare the input password to the hash.
-# 4. Return the user's 'role' (Manager/Clerk) on success or 'None' on failure.
+import bcrypt
+# import function from scrum-18
+from src.database_manager import get_user_by_username 
+
+def login(username, password):
+    """
+    handles scrum-21: hash input and get user role
+    called by app.py for scrum-22
+    """
+    
+    # get user hash and role from database
+    user_data = get_user_by_username(username)
+    
+    if user_data:
+        password_hash = user_data["hash"].encode('utf-8')
+        user_password = password.encode('utf-8')
+        
+        # core of scrum-21: secure password comparison
+        if bcrypt.checkpw(user_password, password_hash):
+            # success: return user role
+            return user_data["role"] 
+            
+    # failed login
+    return None
