@@ -1,13 +1,12 @@
-__pycache__/
-*.py[cod]
-*.egg-info/
-.pytest_cache/
+# Database file
+inventory.db
+*.db
+
+# Python virtual environment
 .venv/
 venv/
-.env
-.DS_Store
-.idea/
-.vscode/
-dist/
-build/
+*.venv
 
+# Python cache files
+__pycache__/
+*.pyc
