@@ -12,7 +12,7 @@ pipeline {
         // MUST MATCH JDK name from Jenkins > Tools
         jdk 'jdk-21'     
         // MUST MATCH NodeJS name from Jenkins > Tools
-        nodejs 'node-20' 
+        nodejs 'node-22' 
     }
 
     stages {
