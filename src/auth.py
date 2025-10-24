@@ -7,7 +7,7 @@
 
 import bcrypt
 # import function from scrum-18
-from database_manager import get_user_by_username 
+from .database_manager import get_user_by_username 
 
 def login(username, password):
     """
