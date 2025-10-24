@@ -50,13 +50,10 @@ pipeline {
             steps {
                 // Uses the SonarQube environment from Jenkins > System
                 withSonarQubeEnv(SONAR_SERVER) {
-                    // Gets the path to the SonarScanner tool
+                    // Get the path to the SonarScanner tool and use it directly
                     // MUST MATCH SonarScanner name from Jenkins > Tools
-                    def scannerHome = tool 'SonarScanner-Latest' 
-                    // Run scanner using 'bat' for Windows
-                    // Replace YOUR_PROJECT_KEY and YOUR_ORG_KEY!
-                    bat """
-                        "${scannerHome}/bin/sonar-scanner.bat" ^
+                    bat(script: """
+                        "%TOOL_SONARSCANNER_LATEST%/bin/sonar-scanner.bat" ^
                           -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
                           -Dsonar.organization=chagall04 ^
                           -Dsonar.sources=src ^
@@ -64,7 +61,7 @@ pipeline {
                           -Dsonar.login=%SONAR_TOKEN% ^
                           -Dsonar.python.coverage.reportPaths=coverage.xml ^
                           -Dsonar.python.pylint.reportPaths=pylint-report.txt
-                    """
+                    """, returnStdout: true) 
                 }
             }
         }

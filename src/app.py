@@ -1,10 +1,10 @@
 # src/app.py
 
-from src.auth import login
+from auth import login
 # import other functions as they are built
-# from src.product_management import add_new_product
-# from src.inventory_tracking import receive_stock
-# from src.sales import record_sale
+# from product_management import add_new_product
+# from inventory_tracking import receive_stock
+# from sales import record_sale
 
 def show_manager_menu():
     """display menu for manager role"""
