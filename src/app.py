@@ -1,9 +1,9 @@
 # src/app.py
 
-from auth import login
+from src.auth import login
+from src.inventory_tracking import receive_new_stock, view_current_stock
 # import other functions as they are built
 # from product_management import add_new_product
-# from inventory_tracking import receive_stock
 # from sales import record_sale
 
 def show_manager_menu():
@@ -37,7 +37,7 @@ def show_clerk_menu():
     while True:
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
-        print("[3A] View Product Stock (Inventory Tracking)")
+        print("[3] View Product Stock (Inventory Tracking)")
         print("[0] Log Out")
         choice = input("Enter choice: ")
 
@@ -45,11 +45,9 @@ def show_clerk_menu():
             # todo: hook up sara's record_sale() here
             print("Sales function not yet implemented.")
         elif choice == '2':
-            # todo: hook up séan's receive_new_stock() here
-            print("Receive stock function not yet implemented.")
+            receive_new_stock()
         elif choice == '3':
-            # todo: hook up séan's view_current_stock() here
-            print("View stock function not yet implemented.")
+            view_current_stock()
         elif choice == '0':
             print("Logging out...")
             break
