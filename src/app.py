@@ -1,7 +1,7 @@
 # src/app.py
 
-from auth import login
-from src.product_management import add_new_product
+from .auth import login
+from .product_management import add_new_product
 
 def show_manager_menu():
     """display menu for manager role"""
