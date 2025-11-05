@@ -12,7 +12,7 @@ pipeline {
         // MUST MATCH JDK name from Jenkins > Tools
         jdk 'jdk-21'     
         // MUST MATCH NodeJS name from Jenkins > Tools
-        nodejs 'node-22' // Or node-22 if you changed it
+        nodejs 'node-22' 
     }
 
     stages {
@@ -51,18 +51,24 @@ pipeline {
             steps {
                 // Uses the SonarQube environment from Jenkins > System
                 withSonarQubeEnv(SONAR_SERVER) {
-                    // Get the path to the SonarScanner tool and use it directly
-                    // MUST MATCH SonarScanner name from Jenkins > Tools
-                    bat(script: """
-                        "%TOOL_SONARSCANNER_LATEST%/bin/sonar-scanner.bat" ^
-                          -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
-                          -Dsonar.organization=chagall04 ^
-                          -Dsonar.sources=src ^
-                          -Dsonar.host.url=https://sonarcloud.io ^
-                          -Dsonar.login=%SONAR_TOKEN% ^
-                          -Dsonar.python.coverage.reportPaths=coverage.xml ^
-                          -Dsonar.python.pylint.reportPaths=pylint-report.txt
-                    """, returnStdout: true) 
+                    // We must wrap this in a 'script' block to define a variable
+                    script {
+                        // Get the path to the SonarScanner tool installation
+                        // MUST MATCH SonarScanner name from Jenkins > Tools
+                        def scannerHome = tool 'SonarScanner-Latest' 
+                        
+                        // Run scanner using 'bat' for Windows, now with the correct path
+                        bat(script: """
+                            "${scannerHome}/bin/sonar-scanner.bat" ^
+                              -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
+                              -Dsonar.organization=chagall04 ^
+                              -Dsonar.sources=src ^
+                              -Dsonar.host.url=https://sonarcloud.io ^
+                              -Dsonar.login=%SONAR_TOKEN% ^
+                              -Dsonar.python.coverage.reportPaths=coverage.xml ^
+                              -Dsonar.python.pylint.reportPaths=pylint-report.txt
+                        """, returnStdout: true) 
+                    }
                 }
             }
         }
