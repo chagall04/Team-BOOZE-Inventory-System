@@ -27,8 +27,33 @@ def get_user_by_username(username):
     return None
 
 # product management functions (scrum-5)
-# todo (lucy): implement scrum-24: db.insert_product(data)
-# function takes product data and executes sql insert
+def insert_product(data):
+    """Insert a new product into the database (SCRUM-24)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO booze (name, brand, type, abv, volume_ml, origin_country, price, quantity_on_hand, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data['name'], 
+            data['brand'], 
+            data['type'], 
+            data.get('abv', None),  # Optional fields with defaults
+            data.get('volume_ml', None),
+            data.get('origin_country', None),
+            data['price'],
+            data['quantity'],
+            data.get('description', None)
+        ))
+        conn.commit()
+        return True, cursor.lastrowid
+    except sqlite3.IntegrityError:
+        return False, "Product name already exists"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
 
 # inventory tracking functions (scrum-9 & scrum-11)
 # todo (séan): implement scrum-28: db.adjust_stock(product_id, quantity)

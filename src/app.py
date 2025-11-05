@@ -1,10 +1,7 @@
 # src/app.py
 
 from auth import login
-# import other functions as they are built
-# from product_management import add_new_product
-# from inventory_tracking import receive_stock
-# from sales import record_sale
+from src.product_management import add_new_product
 
 def show_manager_menu():
     """display menu for manager role"""
@@ -17,8 +14,7 @@ def show_manager_menu():
         choice = input("Enter choice: ")
         
         if choice == '1':
-            # todo: hook up lucy's add_new_product() here
-            print("Product management function not yet implemented.")
+            add_new_product()
         elif choice == '2':
             # todo: hook up charlie's reporting functions here
             print("Reporting function not yet implemented.")
