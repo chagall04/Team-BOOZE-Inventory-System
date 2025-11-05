@@ -5,7 +5,7 @@
 import pytest
 import sqlite3
 from unittest.mock import patch, MagicMock
-from src.database_manager import get_user_by_username, create_user, delete_user
+from src.database_manager import get_user_by_username, create_user, delete_user, insert_product
 
 
 class TestGetUserByUsername:
@@ -123,6 +123,21 @@ class TestDeleteUser:
         
         assert success is False
         assert "not found" in result
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_delete_user_database_error(self, mock_get_db):
+        """test handling of database errors during deletion"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = Exception("database error")
+        
+        success, result = delete_user("testuser")
+        
+        assert success is False
+        assert "database error" in result
+        mock_conn.close.assert_called_once()
 
 
 class TestDatabaseConnection:
@@ -137,3 +152,110 @@ class TestDatabaseConnection:
         assert conn is not None
         assert isinstance(conn, sqlite3.Connection)
         conn.close()
+
+
+class TestInsertProduct:
+    """test class for inserting products (lucy's code)"""
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_insert_product_success_with_all_fields(self, mock_get_db):
+        """test successful product insertion with all fields"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.lastrowid = 1
+        
+        product_data = {
+            'name': 'test beer',
+            'brand': 'test brand',
+            'type': 'beer',
+            'price': 4.99,
+            'quantity': 50,
+            'abv': 4.5,
+            'volume_ml': 500,
+            'origin_country': 'ireland',
+            'description': 'test description'
+        }
+        
+        success, result = insert_product(product_data)
+        
+        assert success is True
+        assert result == 1
+        mock_cursor.execute.assert_called_once()
+        mock_conn.commit.assert_called_once()
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_insert_product_success_with_required_fields_only(self, mock_get_db):
+        """test successful product insertion with only required fields"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.lastrowid = 2
+        
+        product_data = {
+            'name': 'test wine',
+            'brand': 'test brand',
+            'type': 'wine',
+            'price': 15.99,
+            'quantity': 30
+        }
+        
+        success, result = insert_product(product_data)
+        
+        assert success is True
+        assert result == 2
+        # verify optional fields are handled as None
+        call_args = mock_cursor.execute.call_args[0]
+        assert call_args[1][3] is None  # abv
+        assert call_args[1][4] is None  # volume_ml
+        assert call_args[1][5] is None  # origin_country
+        assert call_args[1][8] is None  # description
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_insert_product_duplicate_name(self, mock_get_db):
+        """test product insertion fails with duplicate name"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.IntegrityError("UNIQUE constraint failed")
+        
+        product_data = {
+            'name': 'existing product',
+            'brand': 'test brand',
+            'type': 'beer',
+            'price': 4.99,
+            'quantity': 50
+        }
+        
+        success, result = insert_product(product_data)
+        
+        assert success is False
+        assert "already exists" in result
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_insert_product_database_error(self, mock_get_db):
+        """test handling of general database errors"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = Exception("database connection error")
+        
+        product_data = {
+            'name': 'test product',
+            'brand': 'test brand',
+            'type': 'spirits',
+            'price': 25.99,
+            'quantity': 20
+        }
+        
+        success, result = insert_product(product_data)
+        
+        assert success is False
+        assert "database connection error" in result
+        mock_conn.close.assert_called_once()
