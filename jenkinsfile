@@ -49,22 +49,24 @@ pipeline {
         
         stage('5. SonarCloud Analysis') {
             steps {
-                // Uses the SonarQube environment from Jenkins > System
-                withSonarQubeEnv(SONAR_SERVER) {
-                    // We must wrap this in a 'script' block to define a variable
-                    script {
-                        // Get the path to the SonarScanner tool installation
-                        // MUST MATCH SonarScanner name from Jenkins > Tools
-                        def scannerHome = tool 'SonarScanner-Latest' 
-                        
-                        // Run scanner using 'bat' for Windows, now with the correct path
+                // We no longer need withSonarQubeEnv here, 
+                // we will use the credentials binding directly.
+                script {
+                    // Get the path to the SonarScanner tool installation
+                    def scannerHome = tool 'SonarScanner-Latest' 
+
+                    // This 'withCredentials' block securely binds your token
+                    // to a variable named SONAR_LOGIN_TOKEN
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_LOGIN_TOKEN')]) {
+
+                        // Run scanner using 'bat' for Windows
                         bat(script: """
                             "${scannerHome}/bin/sonar-scanner.bat" ^
                               -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
                               -Dsonar.organization=chagall04 ^
                               -Dsonar.sources=src ^
                               -Dsonar.host.url=https://sonarcloud.io ^
-                              -Dsonar.login=%SONAR_TOKEN% ^
+                              -Dsonar.login=%SONAR_LOGIN_TOKEN% ^
                               -Dsonar.python.coverage.reportPaths=coverage.xml ^
                               -Dsonar.python.pylint.reportPaths=pylint-report.txt
                         """, returnStdout: true) 
