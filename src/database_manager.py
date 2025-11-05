@@ -1,5 +1,6 @@
 # src/database_manager.py
 import sqlite3
+import bcrypt
 
 DB_NAME = "inventory.db"
 
@@ -25,6 +26,48 @@ def get_user_by_username(username):
     if user_data:
         return {"hash": user_data["password_hash"], "role": user_data["role"]}
     return None
+
+
+def create_user(username, password, role):
+    """
+    scrum-17: create new user in database
+    returns (success, result_id_or_error)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (username, password_hash, role)
+        )
+        conn.commit()
+        return True, cursor.lastrowid
+    except sqlite3.IntegrityError:
+        return False, "username already exists"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+
+def delete_user(username):
+    """
+    scrum-17: delete user from database
+    returns (success, message)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            return False, "user not found"
+        return True, "user deleted"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
 
 # product management functions (scrum-5)
 def insert_product(data):

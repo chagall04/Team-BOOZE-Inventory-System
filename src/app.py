@@ -1,7 +1,55 @@
 # src/app.py
 
-from .auth import login
+from .auth import login, create_account, delete_account
 from .product_management import add_new_product
+
+
+def show_account_menu():
+    """
+    display account management menu
+    scrum-17: create, delete accounts
+    """
+    print("\n--- account management ---")
+    print("[1] login")
+    print("[2] create account")
+    print("[3] delete account")
+    print("[0] exit")
+    choice = input("enter choice: ")
+    return choice
+
+
+def handle_create_account():
+    """handle account creation flow"""
+    print("\n=== create new account ===")
+    username = input("username (min 3 characters): ")
+    password = input("password (min 6 characters): ")
+    print("role options: Manager, Clerk")
+    role = input("role: ")
+    
+    success, message = create_account(username, password, role)
+    
+    if success:
+        print(f"\n{message}")
+        return True
+    else:
+        print(f"\nerror: {message}")
+        return False
+
+
+def handle_delete_account():
+    """handle account deletion flow"""
+    print("\n=== delete account ===")
+    username = input("username: ")
+    password = input("password: ")
+    
+    success, message = delete_account(username, password)
+    
+    if success:
+        print(f"\n{message}")
+        return True
+    else:
+        print(f"\nerror: {message}")
+        return False
 
 def show_manager_menu():
     """display menu for manager role"""
@@ -56,26 +104,46 @@ def main():
     """
     main application entry point
     handles scrum-22: integrate login prompt and role-based access
+    scrum-17: account management integration
     """
     print("--- Welcome to the Team-BOOZE Inventory Tracking System ---")
     
-    # get user input
-    username = input("Username: ")
-    password = input("Password: ")
-    
-    # delegate login logic to auth module (scrum-21)
-    role = login(username, password)
-    
-    # route to correct menu based on role
-    if role == "Manager":
-        print(f"\nLogin successful. Welcome, {username} (Manager).")
-        show_manager_menu()
-    elif role == "Clerk":
-        print(f"\nLogin successful. Welcome, {username} (Clerk).")
-        show_clerk_menu()
-    else:
-        # fulfills scrum-17 acceptance criteria
-        print("Access denied: Invalid username or password.")
+    while True:
+        choice = show_account_menu()
+        
+        if choice == '1':
+            # login flow
+            username = input("\nusername: ")
+            password = input("password: ")
+            
+            # delegate login logic to auth module (scrum-21)
+            role = login(username, password)
+            
+            # route to correct menu based on role
+            if role == "Manager":
+                print(f"\nlogin successful. welcome, {username} (manager).")
+                show_manager_menu()
+            elif role == "Clerk":
+                print(f"\nlogin successful. welcome, {username} (clerk).")
+                show_clerk_menu()
+            else:
+                # fulfills scrum-17 acceptance criteria
+                print("access denied: invalid username or password.")
+        
+        elif choice == '2':
+            # create account flow
+            handle_create_account()
+        
+        elif choice == '3':
+            # delete account flow
+            handle_delete_account()
+        
+        elif choice == '0':
+            print("goodbye!")
+            break
+        
+        else:
+            print("invalid choice, please try again.")
 
 if __name__ == "__main__":
     main()
