@@ -12,7 +12,7 @@ pipeline {
         // MUST MATCH JDK name from Jenkins > Tools
         jdk 'jdk-21'     
         // MUST MATCH NodeJS name from Jenkins > Tools
-        nodejs 'node-22' // Or node-22 if you changed it
+        nodejs 'node-22' 
     }
 
     stages {
@@ -49,20 +49,28 @@ pipeline {
         
         stage('5. SonarCloud Analysis') {
             steps {
-                // Uses the SonarQube environment from Jenkins > System
-                withSonarQubeEnv(SONAR_SERVER) {
-                    // Get the path to the SonarScanner tool and use it directly
-                    // MUST MATCH SonarScanner name from Jenkins > Tools
-                    bat(script: """
-                        "%TOOL_SONARSCANNER_LATEST%/bin/sonar-scanner.bat" ^
-                          -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
-                          -Dsonar.organization=chagall04 ^
-                          -Dsonar.sources=src ^
-                          -Dsonar.host.url=https://sonarcloud.io ^
-                          -Dsonar.login=%SONAR_TOKEN% ^
-                          -Dsonar.python.coverage.reportPaths=coverage.xml ^
-                          -Dsonar.python.pylint.reportPaths=pylint-report.txt
-                    """, returnStdout: true) 
+                // We no longer need withSonarQubeEnv here, 
+                // we will use the credentials binding directly.
+                script {
+                    // Get the path to the SonarScanner tool installation
+                    def scannerHome = tool 'SonarScanner-Latest' 
+
+                    // This 'withCredentials' block securely binds your token
+                    // to a variable named SONAR_LOGIN_TOKEN
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_LOGIN_TOKEN')]) {
+
+                        // Run scanner using 'bat' for Windows
+                        bat(script: """
+                            "${scannerHome}/bin/sonar-scanner.bat" ^
+                              -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
+                              -Dsonar.organization=chagall04 ^
+                              -Dsonar.sources=src ^
+                              -Dsonar.host.url=https://sonarcloud.io ^
+                              -Dsonar.login=%SONAR_LOGIN_TOKEN% ^
+                              -Dsonar.python.coverage.reportPaths=coverage.xml ^
+                              -Dsonar.python.pylint.reportPaths=pylint-report.txt
+                        """, returnStdout: true) 
+                    }
                 }
             }
         }
