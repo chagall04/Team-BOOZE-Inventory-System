@@ -7,47 +7,60 @@
 
 from src.database_manager import get_db_connection, insert_product
 
+def validate_required_field(field_value, field_name):
+    """Validate that a required field is not empty"""
+    if not field_value or len(field_value.strip()) == 0:
+        return [f"{field_name} is required"]
+    return []
+
+def validate_numeric_value(value, field_name, convert_func, min_value=None, max_value=None):
+    """Validate numeric fields with optional range checks"""
+    try:
+        num_value = convert_func(value)
+        if min_value is not None and num_value < min_value:
+            if field_name == "Price":
+                return [f"{field_name} must be non-negative"], None
+            elif field_name == "Initial stock":
+                return [f"{field_name} quantity must be non-negative"], None
+            elif field_name == "Volume" and min_value == 1:
+                return [f"{field_name} must be greater than 0"], None
+            return [f"{field_name} must be between 0 and {max_value}"], None
+        if max_value is not None and num_value > max_value:
+            return [f"{field_name} must be between 0 and {max_value}"], None
+        return [], num_value
+    except ValueError:
+        if convert_func == int:
+            if field_name == "Initial stock":
+                return [f"{field_name} must be a valid whole number"], None
+            else:
+                return [f"{field_name} must be a valid number"], None
+        return [f"{field_name} must be a valid number"], None
+
 def validate_product_data(name, brand, type_, price, quantity, abv=None, volume_ml=None):
     """Client-side validation for product data (SCRUM-25)"""
     errors = []
     
-    if not name or len(name.strip()) == 0:
-        errors.append("Product name is required")
-    if not brand or len(brand.strip()) == 0:
-        errors.append("Brand name is required")
-    if not type_ or len(type_.strip()) == 0:
-        errors.append("Product type is required")
+    # Required fields validation
+    errors.extend(validate_required_field(name, "Product name"))
+    errors.extend(validate_required_field(brand, "Brand name"))
+    errors.extend(validate_required_field(type_, "Product type"))
     
-    try:
-        price = float(price)
-        if price < 0:
-            errors.append("Price must be non-negative")
-    except ValueError:
-        errors.append("Price must be a valid number")
+    # Price validation
+    price_errors, price_value = validate_numeric_value(price, "Price", float, min_value=0)
+    errors.extend(price_errors)
     
-    try:
-        quantity = int(quantity)
-        if quantity < 0:
-            errors.append("Initial stock quantity must be non-negative")
-    except ValueError:
-        errors.append("Initial stock must be a valid whole number")
-
+    # Quantity validation
+    quantity_errors, quantity_value = validate_numeric_value(quantity, "Initial stock", int, min_value=0)
+    errors.extend(quantity_errors)
+    
     # Optional field validation
-    if abv is not None and abv.strip():
-        try:
-            abv = float(abv)
-            if abv < 0 or abv > 100:
-                errors.append("ABV must be between 0 and 100")
-        except ValueError:
-            errors.append("ABV must be a valid number")
+    if abv and abv.strip():
+        abv_errors, _ = validate_numeric_value(abv, "ABV", float, min_value=0, max_value=100)
+        errors.extend(abv_errors)
     
-    if volume_ml is not None and volume_ml.strip():
-        try:
-            volume_ml = int(volume_ml)
-            if volume_ml <= 0:
-                errors.append("Volume must be greater than 0")
-        except ValueError:
-            errors.append("Volume must be a valid whole number")
+    if volume_ml and volume_ml.strip():
+        volume_errors, _ = validate_numeric_value(volume_ml, "Volume", int, min_value=1)
+        errors.extend(volume_errors)
     
     return len(errors) == 0, errors
 

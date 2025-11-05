@@ -74,7 +74,7 @@ def test_add_new_product_success(optional_fields):
             # Verify data sent to database
             call_args = mock_insert.call_args[0][0]
             assert call_args['name'] == "Test Product"
-            assert call_args['price'] == 4.99
+            assert call_args['price'] == pytest.approx(4.99, rel=1e-6)
             assert call_args['quantity'] == 50
 
 def test_add_new_product_db_error():
@@ -206,7 +206,65 @@ def test_add_new_product_data_validation():
             # Verify the data was properly processed
             call_args = mock_insert.call_args[0][0]
             assert call_args['name'].strip() == "Test Beer"
+            # Check data types
             assert isinstance(call_args['price'], float)
             assert isinstance(call_args['quantity'], int)
             assert isinstance(call_args['abv'], float)
             assert isinstance(call_args['volume_ml'], int)
+            
+            # Check values with appropriate comparison methods
+            assert call_args['price'] == pytest.approx(4.99, rel=1e-6)
+            assert call_args['quantity'] == 50
+            assert call_args['abv'] == pytest.approx(4.5, rel=1e-6)
+            assert call_args['volume_ml'] == 500
+
+def test_validate_numeric_value_direct():
+    """Test numeric validation function directly to cover edge cases"""
+    from src.product_management import validate_numeric_value
+
+    # Test invalid numeric input for non-Initial stock fields
+    errors, value = validate_numeric_value("abc", "Custom Field", int)
+    assert errors == ["Custom Field must be a valid number"]
+    assert value is None
+
+def test_add_new_product_validation_failure():
+    """Test validation failure in add_new_product"""
+    mock_inputs = [
+        "",  # Empty name (will fail validation)
+        "Test Brand", 
+        "Beer",
+        "4.99",
+        "50",
+        "",
+        "",
+        "",
+        ""
+    ]
+
+    with patch('builtins.input', side_effect=mock_inputs), \
+         patch('builtins.print') as mock_print:
+        result = add_new_product()
+        assert result == False
+        mock_print.assert_any_call("\nError: Invalid product data:")
+        mock_print.assert_any_call("- Product name is required")
+
+def test_add_new_product_db_failure():
+    """Test database failure in add_new_product"""
+    mock_inputs = [
+        "Test Beer",
+        "Test Brand",
+        "Beer",
+        "4.99",
+        "50",
+        "",
+        "",
+        "",
+        ""
+    ]
+
+    with patch('builtins.input', side_effect=mock_inputs), \
+         patch('src.product_management.insert_product', return_value=(False, "Database error")), \
+         patch('builtins.print') as mock_print:
+        result = add_new_product()
+        assert result == False
+        mock_print.assert_any_call("\nError: Failed to add product - Database error")

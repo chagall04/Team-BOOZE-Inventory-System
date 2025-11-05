@@ -2,8 +2,6 @@
 
 from auth import login
 from src.product_management import add_new_product
-# from inventory_tracking import receive_stock
-# from sales import record_sale
 
 def show_manager_menu():
     """display menu for manager role"""
