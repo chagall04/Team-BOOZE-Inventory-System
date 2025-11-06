@@ -93,6 +93,18 @@ def test_receive_new_stock_invalid_id(mock_input):
     result = receive_new_stock()
     assert result is False
 
+@patch('builtins.input', side_effect=['999', '10'])
+@patch('src.database_manager.get_stock_by_id')
+def test_receive_new_stock_nonexistent_product(mock_get_stock, mock_input):
+    """SCRUM-30: Test handling nonexistent product"""
+    from src.inventory_tracking import receive_new_stock
+    
+    # Force get_stock_by_id to return None to simulate product not found
+    mock_get_stock.return_value = None
+    
+    result = receive_new_stock()
+    assert result is False
+
 @patch('builtins.input', side_effect=['1', '-5'])
 def test_receive_new_stock_negative_quantity(mock_input):
     """SCRUM-30: Test handling negative quantity input"""
@@ -121,3 +133,42 @@ def test_receive_new_stock_update_failure(mock_get_stock, mock_adjust_stock, moc
     result = receive_new_stock()
     assert result is False, "Function should return False when adjust_stock fails"
     mock_adjust_stock.assert_called_once_with(1, 60)  # 50 + 10
+
+@patch('builtins.input', side_effect=['1'])
+def test_view_current_stock_success(mock_input, capsys):
+    """SCRUM-11 & SCRUM-32: Test successful stock viewing"""
+    from src.inventory_tracking import view_current_stock
+    
+    result = view_current_stock()
+    assert result is True
+    
+    # Check the output format
+    captured = capsys.readouterr()
+    assert "Product Name: Test Product" in captured.out
+    assert "Current Stock: 50 units" in captured.out
+
+@patch('builtins.input', side_effect=['abc'])
+def test_view_current_stock_invalid_id(mock_input, capsys):
+    """SCRUM-32: Test handling invalid product ID input"""
+    from src.inventory_tracking import view_current_stock
+    
+    result = view_current_stock()
+    assert result is False
+    
+    captured = capsys.readouterr()
+    assert "Error: Product ID must be a number" in captured.out
+
+@patch('builtins.input', side_effect=['999'])
+@patch('src.database_manager.get_stock_by_id')
+def test_view_current_stock_product_not_found(mock_get_stock, mock_input, capsys):
+    """SCRUM-32: Test handling nonexistent product"""
+    from src.inventory_tracking import view_current_stock
+    
+    # Force get_stock_by_id to return None to simulate product not found
+    mock_get_stock.return_value = None
+    
+    result = view_current_stock()
+    assert result is False
+    
+    captured = capsys.readouterr()
+    assert "Error: Product with ID 999 not found" in captured.out

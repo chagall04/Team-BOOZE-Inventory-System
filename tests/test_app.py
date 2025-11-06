@@ -256,15 +256,22 @@ class TestClerkMenu:
         mock_get_stock.assert_called_once_with(1)
         mock_adjust.assert_called_once_with(1, 60)  # 50 + 10
     
+    @patch('src.inventory_tracking.get_stock_by_id')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_clerk_menu_view_stock(self, mock_print, mock_input):
-        """test clerk can access view stock (not yet implemented)"""
-        mock_input.side_effect = ["3", "0"]
+    def test_clerk_menu_view_stock(self, mock_print, mock_input, mock_get_stock):
+        """test clerk can access view stock functionality"""
+        # Set up mock data
+        mock_stock_data = {'id': 1, 'name': 'Test Product', 'quantity': 50}
+        mock_get_stock.return_value = mock_stock_data
+        
+        # Menu choice '3' (view stock), then product id '1', then '0' to exit
+        mock_input.side_effect = ["3", "1", "0"]
         
         show_clerk_menu()
         
-        mock_input.assert_called()
+        # Verify the function was called with correct product ID
+        mock_get_stock.assert_called_once_with(1)
     
     @patch('builtins.input')
     @patch('builtins.print')
