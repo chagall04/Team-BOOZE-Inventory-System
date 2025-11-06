@@ -240,13 +240,21 @@ class TestClerkMenu:
     
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_clerk_menu_receive_stock(self, mock_print, mock_input):
-        """test clerk can access receive stock (not yet implemented)"""
-        mock_input.side_effect = ["2", "0"]
+    @patch('src.inventory_tracking.get_stock_by_id')
+    @patch('src.inventory_tracking.adjust_stock')
+    def test_clerk_menu_receive_stock(self, mock_adjust, mock_get_stock, mock_print, mock_input):
+        """test clerk can access receive stock function"""
+        # Mock stock lookup data
+        mock_get_stock.return_value = {'id': 1, 'name': 'Test Product', 'quantity': 50}
+        mock_adjust.return_value = True
+        
+        # Menu choice '2' (receive stock), then product id '1', quantity '10', finally '0' to exit
+        mock_input.side_effect = ["2", "1", "10", "0"]
         
         show_clerk_menu()
         
-        mock_input.assert_called()
+        mock_get_stock.assert_called_once_with(1)
+        mock_adjust.assert_called_once_with(1, 60)  # 50 + 10
     
     @patch('builtins.input')
     @patch('builtins.print')

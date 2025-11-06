@@ -99,14 +99,48 @@ def insert_product(data):
         conn.close()
 
 # inventory tracking functions (scrum-9 & scrum-11)
-# todo (séan): implement scrum-28: db.adjust_stock(product_id, quantity)
-# function takes product_id and new_quantity
-# executes sql update: "update booze set quantity_on_hand = ? where id = ?"
+def adjust_stock(product_id, new_quantity):
+    """
+    SCRUM-28: Update the stock level for a product
+    Args:
+        product_id (int): The ID of the product to update
+        new_quantity (int): The new stock level to set
+    Returns:
+        bool: True if update successful, False if product not found
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("UPDATE booze SET quantity_on_hand = ? WHERE id = ?", 
+                  (new_quantity, product_id))
+    
+    success = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return success
 
-# todo (séan): implement scrum-29: db.get_stock_by_id(product_id)
-# function takes product_id
-# executes sql: "select name, quantity_on_hand from booze where id = ?"
-# used by scrum-9 (get current stock) and scrum-11 (display stock)
+def get_stock_by_id(product_id):
+    """
+    SCRUM-29: Get the current stock level and name for a product
+    Args:
+        product_id (int): The ID of the product to look up
+    Returns:
+        dict: Product details with 'name' and 'quantity' keys, or None if not found
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name, quantity_on_hand FROM booze WHERE id = ?", 
+                  (product_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        return {
+            'name': result['name'],
+            'quantity': result['quantity_on_hand']
+        }
+    return None
 
 # sales transaction functions (scrum-12)
 # todo (sara): implement scrum-36: db.start_transaction() and db.log_item_sale()
