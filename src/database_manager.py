@@ -110,14 +110,16 @@ def adjust_stock(product_id, new_quantity):
     """
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("UPDATE booze SET quantity_on_hand = ? WHERE id = ?", 
-                  (new_quantity, product_id))
-    
-    success = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return success
+    try:
+        cursor.execute("UPDATE booze SET quantity_on_hand = ? WHERE id = ?", 
+                       (new_quantity, product_id))
+        conn.commit()
+        success = cursor.rowcount > 0
+        return success
+    except Exception:
+        return False
+    finally:
+        conn.close()
 
 def get_stock_by_id(product_id):
     """
