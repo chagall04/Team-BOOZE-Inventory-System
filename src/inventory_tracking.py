@@ -42,7 +42,6 @@ def receive_new_stock():
     new_stock_level = current_stock['quantity'] + quantity_to_add
     
     # Update the database (SCRUM-28)
-    # Update the database (SCRUM-28)
     update_result = adjust_stock(product_id, new_stock_level)
     if not update_result:
         print(f"\nError: Failed to update stock level in database.")
@@ -58,19 +57,32 @@ def receive_new_stock():
 def view_current_stock():
     """
     Handles the logic for SCRUM-11: "As a Store Clerk, I want to view the
-    current stock level..."
+    current stock level of a product."
     
-    TODO (Séan):
-    1. Implement SCRUM-32: Create a function to handle product lookup.
-       - Ask user for the product ID to view.
-    2. Call the db.get_stock_by_id() function (SCRUM-29) to get the data.
-    3. Implement SCRUM-34: Format the retrieved data for clear display.
-       - e.g., print(f"Product: {product_name}, Current Stock: {stock_level}")
-    4. This is already integrated into the 'View Stock' menu (SCRUM-33)
-       in app.py.
+    Returns:
+        bool: True if stock was successfully displayed, False if there was an error
     """
-    print("Function 'view_current_stock' is not yet implemented.")
-    pass
+    print("\n--- View Current Stock ---")
+    
+    # SCRUM-32: Handle product lookup
+    try:
+        product_id = int(input("Enter Product ID: "))
+    except ValueError:
+        print("Error: Product ID must be a number.")
+        return False
+    
+    # SCRUM-29: Get stock data from database
+    stock_data = get_stock_by_id(product_id)
+    
+    if stock_data is None:
+        print(f"Error: Product with ID {product_id} not found.")
+        return False
+    
+    # SCRUM-34: Format and display the data
+    print("\nStock Information:")
+    print(f"Product Name: {stock_data['name']}")
+    print(f"Current Stock: {stock_data['quantity']} units")
+    return True
 
 # --- Backlog (Not in Sprint 1) ---
 # SCRUM-10 (Log Product Loss) will be implemented here in a future sprint.
