@@ -4,25 +4,56 @@
 
 # This module contains the business logic for managing stock levels.
 
-from src.database_manager import get_db_connection # and other db functions
+from .database_manager import get_db_connection, get_stock_by_id, adjust_stock
 
 def receive_new_stock():
     """
     Handles the logic for SCRUM-9: "As a Store Clerk, I want to receive new
-    stock..."
+    stock so that the inventory is updated correctly."
     
-    TODO (Séan):
-    1. Implement SCRUM-30: Create the "Receive Stock" CLI screen.
-       - Ask user for the product ID to update.
-       - Ask for the quantity being added.
-    2. Call the db.get_stock_by_id() function (SCRUM-29) to get current stock.
-    3. Calculate new_stock = current_stock + quantity_added.
-    4. Call the db.adjust_stock() function (SCRUM-28) to save the new total.
-    5. Print a success message.
-    6. SCRUM-31 (Unit Test) will be handled in 'tests/test_inventory_tracking.py'
+    Returns:
+        bool: True if stock was successfully updated, False otherwise
     """
-    print("Function 'receive_new_stock' is not yet implemented.")
-    pass
+    print("\n--- Receive New Stock ---")
+    
+    # SCRUM-30: CLI interface for receiving stock
+    try:
+        product_id = int(input("Enter Product ID: "))
+    except ValueError:
+        print("Error: Product ID must be a number.")
+        return False
+        
+    try:
+        quantity_to_add = int(input("Enter quantity to add: "))
+        if quantity_to_add < 0:
+            raise ValueError("Quantity cannot be negative")
+    except ValueError as e:
+        print(f"Error: {str(e)}")
+        return False
+    
+    # Get current stock level (SCRUM-29)
+    current_stock = get_stock_by_id(product_id)
+    
+    if current_stock is None:
+        print(f"Error: Product with ID {product_id} not found.")
+        return False
+    
+    # Calculate new stock level
+    new_stock_level = current_stock['quantity'] + quantity_to_add
+    
+    # Update the database (SCRUM-28)
+    # Update the database (SCRUM-28)
+    update_result = adjust_stock(product_id, new_stock_level)
+    if not update_result:
+        print(f"\nError: Failed to update stock level in database.")
+        return False
+        
+    # If we get here, update was successful
+    print(f"\nSuccess! Updated stock for {current_stock['name']}:")
+    print(f"Previous stock level: {current_stock['quantity']}")
+    print(f"Added: {quantity_to_add}")
+    print(f"New stock level: {new_stock_level}")
+    return True
 
 def view_current_stock():
     """

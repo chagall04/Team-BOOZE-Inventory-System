@@ -77,11 +77,13 @@ def show_manager_menu():
 
 def show_clerk_menu():
     """display menu for clerk role"""
+    from .inventory_tracking import receive_new_stock
+    
     print("\n--- CLERK MENU ---")
     while True:
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
-        print("[3A] View Product Stock (Inventory Tracking)")
+        print("[3] View Product Stock (Inventory Tracking)")
         print("[0] Log Out")
         choice = input("Enter choice: ")
 
@@ -89,8 +91,7 @@ def show_clerk_menu():
             # todo: hook up sara's record_sale() here
             print("Sales function not yet implemented.")
         elif choice == '2':
-            # todo: hook up séan's receive_new_stock() here
-            print("Receive stock function not yet implemented.")
+            receive_new_stock()
         elif choice == '3':
             # todo: hook up séan's view_current_stock() here
             print("View stock function not yet implemented.")
