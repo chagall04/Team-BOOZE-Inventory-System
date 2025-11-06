@@ -77,7 +77,7 @@ def show_manager_menu():
 
 def show_clerk_menu():
     """display menu for clerk role"""
-    from .inventory_tracking import receive_new_stock
+    from .inventory_tracking import receive_new_stock, view_current_stock
     
     print("\n--- CLERK MENU ---")
     while True:
@@ -93,8 +93,7 @@ def show_clerk_menu():
         elif choice == '2':
             receive_new_stock()
         elif choice == '3':
-            # todo: hook up séan's view_current_stock() here
-            print("View stock function not yet implemented.")
+            view_current_stock()
         elif choice == '0':
             print("Logging out...")
             break
