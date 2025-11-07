@@ -1,7 +1,12 @@
 # src/app.py
+"""Main application module for Team-BOOZE Inventory System.
+
+This module handles the user interface and menu navigation.
+"""
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
+from .sales import record_sale
 
 
 def show_account_menu():
@@ -9,47 +14,47 @@ def show_account_menu():
     display account management menu
     scrum-17: create, delete accounts
     """
-    print("\n--- account management ---")
-    print("[1] login")
-    print("[2] create account")
-    print("[3] delete account")
-    print("[0] exit")
-    choice = input("enter choice: ")
+    print("\n--- Account Management ---")
+    print("[1] Login")
+    print("[2] Create Account")
+    print("[3] Delete Account")
+    print("[0] Exit")
+    choice = input("Enter choice: ")
     return choice
 
 
 def handle_create_account():
     """handle account creation flow"""
-    print("\n=== create new account ===")
-    username = input("username (min 3 characters): ")
-    password = input("password (min 6 characters): ")
-    print("role options: Manager, Clerk")
-    role = input("role: ")
-    
+    print("\n=== Create New Account ===")
+    username = input("Username (min 3 characters): ")
+    password = input("Password (min 6 characters): ")
+    print("Role options: Manager, Clerk")
+    role = input("Role: ")
+
     success, message = create_account(username, password, role)
-    
+
     if success:
         print(f"\n{message}")
         return True
-    else:
-        print(f"\nerror: {message}")
-        return False
+
+    print(f"\nError: {message}")
+    return False
 
 
 def handle_delete_account():
     """handle account deletion flow"""
-    print("\n=== delete account ===")
-    username = input("username: ")
-    password = input("password: ")
-    
+    print("\n=== Delete Account ===")
+    username = input("Username: ")
+    password = input("Password: ")
+
     success, message = delete_account(username, password)
-    
+
     if success:
         print(f"\n{message}")
         return True
-    else:
-        print(f"\nerror: {message}")
-        return False
+
+    print(f"\nError: {message}")
+    return False
 
 def show_manager_menu():
     """display menu for manager role"""
@@ -60,7 +65,7 @@ def show_manager_menu():
         print("[3] View Sales History (Sales Management)")
         print("[0] Log Out")
         choice = input("Enter choice: ")
-        
+
         if choice == '1':
             add_new_product()
         elif choice == '2':
@@ -77,23 +82,22 @@ def show_manager_menu():
 
 def show_clerk_menu():
     """display menu for clerk role"""
-    from .inventory_tracking import receive_new_stock, view_current_stock
-    
     print("\n--- CLERK MENU ---")
     while True:
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
-        print("[3] View Product Stock (Inventory Tracking)")
+        print("[3A] View Product Stock (Inventory Tracking)")
         print("[0] Log Out")
         choice = input("Enter choice: ")
 
         if choice == '1':
-            # todo: hook up sara's record_sale() here
-            print("Sales function not yet implemented.")
+            record_sale()
         elif choice == '2':
-            receive_new_stock()
+            # todo: hook up séan's receive_new_stock() here
+            print("Receive stock function not yet implemented.")
         elif choice == '3':
-            view_current_stock()
+            # todo: hook up séan's view_current_stock() here
+            print("View stock function not yet implemented.")
         elif choice == '0':
             print("Logging out...")
             break
@@ -107,43 +111,43 @@ def main():
     scrum-17: account management integration
     """
     print("--- Welcome to the Team-BOOZE Inventory Tracking System ---")
-    
+
     while True:
         choice = show_account_menu()
-        
+
         if choice == '1':
             # login flow
-            username = input("\nusername: ")
-            password = input("password: ")
-            
+            username = input("\nUsername: ")
+            password = input("Password: ")
+
             # delegate login logic to auth module (scrum-21)
             role = login(username, password)
-            
+
             # route to correct menu based on role
             if role == "Manager":
-                print(f"\nlogin successful. welcome, {username} (manager).")
+                print(f"\nLogin successful. Welcome, {username} (Manager).")
                 show_manager_menu()
             elif role == "Clerk":
-                print(f"\nlogin successful. welcome, {username} (clerk).")
+                print(f"\nLogin successful. Welcome, {username} (Clerk).")
                 show_clerk_menu()
             else:
                 # fulfills scrum-17 acceptance criteria
-                print("access denied: invalid username or password.")
-        
+                print("Access denied: Invalid username or password.")
+
         elif choice == '2':
             # create account flow
             handle_create_account()
-        
+
         elif choice == '3':
             # delete account flow
             handle_delete_account()
-        
+
         elif choice == '0':
-            print("goodbye!")
+            print("Goodbye!")
             break
-        
+
         else:
-            print("invalid choice, please try again.")
+            print("Invalid choice, please try again.")
 
 if __name__ == "__main__":
     main()
