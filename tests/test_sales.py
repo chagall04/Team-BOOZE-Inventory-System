@@ -135,6 +135,71 @@ class TestStockAvailability:
         assert product['quantity_on_hand'] == 10
         assert error is None
 
+    @patch('src.sales.get_product_details')
+    def test_check_stock_availability_prevents_oversell_with_cart(self, mock_get_product):
+        """Test that stock check accounts for items already in cart to prevent overselling"""
+        mock_get_product.return_value = {
+            'id': 1,
+            'name': 'Beer',
+            'price': 5.50,
+            'quantity_on_hand': 10
+        }
+
+        # Simulate cart that already has 6 units of product ID 1
+        existing_cart = [
+            {'product_id': 1, 'name': 'Beer', 'price': 5.50, 'quantity': 6, 'current_stock': 10}
+        ]
+
+        # Try to add 6 more units (total would be 12, but only 10 available)
+        is_available, product, error = check_stock_availability(1, 6, existing_cart)
+        assert is_available is False
+        assert "Insufficient stock" in error
+        assert "Already in cart: 6" in error
+        assert "Requested: 6" in error
+        assert "Total needed: 12" in error
+
+    @patch('src.sales.get_product_details')
+    def test_check_stock_availability_with_cart_multiple_same_product(self, mock_get_product):
+        """Test stock check with multiple cart entries of same product"""
+        mock_get_product.return_value = {
+            'id': 5,
+            'name': 'Wine',
+            'price': 15.00,
+            'quantity_on_hand': 20
+        }
+
+        # Cart has product 5 added twice (3 + 4 = 7 total)
+        existing_cart = [
+            {'product_id': 5, 'name': 'Wine', 'price': 15.00, 'quantity': 3, 'current_stock': 20},
+            {'product_id': 3, 'name': 'Whiskey', 'price': 40.00, 'quantity': 2, 'current_stock': 30},
+            {'product_id': 5, 'name': 'Wine', 'price': 15.00, 'quantity': 4, 'current_stock': 20}
+        ]
+
+        # Try to add 14 more (total would be 21, but only 20 available)
+        is_available, product, error = check_stock_availability(5, 14, existing_cart)
+        assert is_available is False
+        assert "Already in cart: 7" in error
+
+    @patch('src.sales.get_product_details')
+    def test_check_stock_availability_with_cart_allows_valid_addition(self, mock_get_product):
+        """Test that valid additions are still allowed with cart consideration"""
+        mock_get_product.return_value = {
+            'id': 2,
+            'name': 'Vodka',
+            'price': 25.00,
+            'quantity_on_hand': 15
+        }
+
+        # Cart has 5 units of product 2
+        existing_cart = [
+            {'product_id': 2, 'name': 'Vodka', 'price': 25.00, 'quantity': 5, 'current_stock': 15}
+        ]
+
+        # Try to add 8 more (total 13, within 15 available)
+        is_available, product, error = check_stock_availability(2, 8, existing_cart)
+        assert is_available is True
+        assert error is None
+
 
 class TestDisplayCart:
     """Test cart display function (SCRUM-40)"""

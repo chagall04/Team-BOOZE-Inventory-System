@@ -38,9 +38,10 @@ def validate_quantity_input(quantity_str):
         return False, None, "Quantity must be a valid number"
 
 
-def check_stock_availability(product_id, requested_quantity):
+def check_stock_availability(product_id, requested_quantity, cart=None):
     """
     scrum-38: pre-sale check for stock availability
+    Accounts for quantities already in cart to prevent overselling
     returns (is_available, product_data, error_message)
     """
     product = get_product_details(product_id)
@@ -48,10 +49,22 @@ def check_stock_availability(product_id, requested_quantity):
     if product is None:
         return False, None, f"Product with ID {product_id} not found"
 
-    if product["quantity_on_hand"] < requested_quantity:
+    # Calculate quantity already in cart for this product
+    cart_quantity = 0
+    if cart:
+        for item in cart:
+            if item['product_id'] == product_id:
+                cart_quantity += item['quantity']
+
+    # Check if total requested (cart + new request) exceeds available stock
+    total_requested = cart_quantity + requested_quantity
+    if product["quantity_on_hand"] < total_requested:
         return False, product, (
             f"Insufficient stock for {product['name']}. "
-            f"Available: {product['quantity_on_hand']}, Requested: {requested_quantity}"
+            f"Available: {product['quantity_on_hand']}, "
+            f"Already in cart: {cart_quantity}, "
+            f"Requested: {requested_quantity}, "
+            f"Total needed: {total_requested}"
         )
 
     return True, product, None
@@ -141,7 +154,7 @@ def record_sale():
                 continue
 
             # SCRUM-38: Pre-sale check for stock availability
-            is_available, product, error = check_stock_availability(product_id, quantity)
+            is_available, product, error = check_stock_availability(product_id, quantity, cart)
             if not is_available:
                 print(f"Error: {error}")
                 continue
