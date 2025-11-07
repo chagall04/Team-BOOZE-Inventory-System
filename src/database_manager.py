@@ -1,5 +1,10 @@
 # src/database_manager.py
+"""Database manager module for Team-BOOZE Inventory System.
+
+This module provides database operations for users, products, and sales transactions.
+"""
 import sqlite3
+from datetime import datetime
 import bcrypt
 
 DB_NAME = "inventory.db"
@@ -22,7 +27,7 @@ def get_user_by_username(username):
     cursor.execute("SELECT password_hash, role FROM users WHERE username = ?", (username,))
     user_data = cursor.fetchone()
     conn.close()
-    
+
     if user_data:
         return {"hash": user_data["password_hash"], "role": user_data["role"]}
     return None
@@ -45,7 +50,7 @@ def create_user(username, password, role):
         return True, cursor.lastrowid
     except sqlite3.IntegrityError:
         return False, "username already exists"
-    except Exception as e:
+    except sqlite3.Error as e:
         return False, str(e)
     finally:
         conn.close()
@@ -64,7 +69,7 @@ def delete_user(username):
         if cursor.rowcount == 0:
             return False, "user not found"
         return True, "user deleted"
-    except Exception as e:
+    except sqlite3.Error as e:
         return False, str(e)
     finally:
         conn.close()
@@ -79,9 +84,9 @@ def insert_product(data):
             INSERT INTO booze (name, brand, type, abv, volume_ml, origin_country, price, quantity_on_hand, description)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            data['name'], 
-            data['brand'], 
-            data['type'], 
+            data['name'],
+            data['brand'],
+            data['type'],
             data.get('abv', None),  # Optional fields with defaults
             data.get('volume_ml', None),
             data.get('origin_country', None),
@@ -93,7 +98,7 @@ def insert_product(data):
         return True, cursor.lastrowid
     except sqlite3.IntegrityError:
         return False, "Product name already exists"
-    except Exception as e:
+    except sqlite3.Error as e:
         return False, str(e)
     finally:
         conn.close()
@@ -101,53 +106,177 @@ def insert_product(data):
 # inventory tracking functions (scrum-9 & scrum-11)
 def adjust_stock(product_id, new_quantity):
     """
-    SCRUM-28: Update the stock level for a product
-    Args:
-        product_id (int): The ID of the product to update
-        new_quantity (int): The new stock level to set
-    Returns:
-        bool: True if update successful, False if product not found
+    scrum-28: update stock quantity for a product
+    returns True on success, False on failure
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE booze SET quantity_on_hand = ? WHERE id = ?", 
-                       (new_quantity, product_id))
+        cursor.execute("UPDATE booze SET quantity_on_hand = ? WHERE id = ?",
+                      (new_quantity, product_id))
         conn.commit()
-        success = cursor.rowcount > 0
-        return success
-    except Exception:
+        return cursor.rowcount > 0
+    except sqlite3.Error:
         return False
     finally:
         conn.close()
 
+
 def get_stock_by_id(product_id):
     """
-    SCRUM-29: Get the current stock level and name for a product
-    Args:
-        product_id (int): The ID of the product to look up
-    Returns:
-        dict: Product details with 'name' and 'quantity' keys, or None if not found
+    scrum-29: get product name and stock quantity by id
+    returns dict with 'name' and 'quantity' or None if not found
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, quantity_on_hand FROM booze WHERE id = ?",
+                  (product_id,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        return {"name": result["name"], "quantity": result["quantity_on_hand"]}
+    return None
+
+
+# sales transaction functions (scrum-12)
+def get_product_details(product_id):
+    """
+    scrum-38: get full product details for sale validation
+    returns dict with product info or None if not found
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, name, price, quantity_on_hand FROM booze WHERE id = ?",
+        (product_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        return {
+            "id": result["id"],
+            "name": result["name"],
+            "price": result["price"],
+            "quantity_on_hand": result["quantity_on_hand"]
+        }
+    return None
+
+
+def start_transaction(total_amount):
+    """
+    scrum-36: create new transaction record
+    returns transaction_id on success, None on failure
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            "INSERT INTO transactions (timestamp, total_amount) VALUES (?, ?)",
+            (timestamp, total_amount)
+        )
+        conn.commit()
+        transaction_id = cursor.lastrowid
+        return transaction_id
+    except sqlite3.Error:
+        return None
+    finally:
+        conn.close()
+
+
+def log_item_sale(transaction_id, product_id, quantity, price_at_sale):
+    """
+    scrum-36: create transaction_items record
+    returns True on success, False on failure
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO transaction_items
+               (transaction_id, product_id, quantity, price_at_sale)
+               VALUES (?, ?, ?, ?)""",
+            (transaction_id, product_id, quantity, price_at_sale)
+        )
+        conn.commit()
+        return True
+    except sqlite3.Error:
+        return False
+    finally:
+        conn.close()
+
+def process_sale_transaction(cart_items, total_amount):
+    """
+    scrum-12: atomic sale transaction with rollback support
+    processes entire sale as single transaction - creates transaction record,
+    logs all items, and updates stock atomically
+    
+    args:
+        cart_items: list of dicts with 'product_id', 'quantity', 'price'
+        total_amount: total sale amount
+    
+    returns:
+        (success: bool, transaction_id or error_message: str)
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT name, quantity_on_hand FROM booze WHERE id = ?", 
-                  (product_id,))
-    result = cursor.fetchone()
-    conn.close()
-    
-    if result:
-        return {
-            'name': result['name'],
-            'quantity': result['quantity_on_hand']
-        }
-    return None
-
-# sales transaction functions (scrum-12)
-# todo (sara): implement scrum-36: db.start_transaction() and db.log_item_sale()
-# need functions to:
-# 1. create new row in 'transactions' and return transaction_id
-# 2. create new row in 'transaction_items' for each item
-# 3. function to get 'quantity_on_hand' for product (scrum-38 check)
-#    (can reuse séan's scrum-29 function)
+    try:
+        # start database transaction
+        cursor.execute("BEGIN TRANSACTION")
+        
+        # create transaction record
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            "INSERT INTO transactions (timestamp, total_amount) VALUES (?, ?)",
+            (timestamp, total_amount)
+        )
+        transaction_id = cursor.lastrowid
+        
+        # process each item in the cart
+        for item in cart_items:
+            # log the item sale
+            cursor.execute(
+                """INSERT INTO transaction_items
+                   (transaction_id, product_id, quantity, price_at_sale)
+                   VALUES (?, ?, ?, ?)""",
+                (transaction_id, item['product_id'], item['quantity'], item['price'])
+            )
+            
+            # get current stock (re-fetch to avoid stale data)
+            cursor.execute(
+                "SELECT quantity_on_hand FROM booze WHERE id = ?",
+                (item['product_id'],)
+            )
+            stock_result = cursor.fetchone()
+            if stock_result is None:
+                raise sqlite3.Error(f"Product {item['product_id']} not found")
+            
+            current_stock = stock_result['quantity_on_hand']
+            new_stock = current_stock - item['quantity']
+            
+            # validate that stock won't go negative (race condition protection)
+            if new_stock < 0:
+                raise sqlite3.Error(
+                    f"Insufficient stock for product {item['product_id']}: "
+                    f"available {current_stock}, requested {item['quantity']}"
+                )
+            
+            # update stock
+            cursor.execute(
+                "UPDATE booze SET quantity_on_hand = ? WHERE id = ?",
+                (new_stock, item['product_id'])
+            )
+        
+        # commit all changes atomically
+        conn.commit()
+        return True, transaction_id
+        
+    except sqlite3.Error as e:
+        # rollback all changes if anything failed
+        conn.rollback()
+        return False, str(e)
+    finally:
+        conn.close()
