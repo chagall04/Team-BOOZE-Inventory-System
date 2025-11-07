@@ -491,3 +491,31 @@ class TestSalesDatabaseFunctions:
                        if 'UPDATE booze' in str(call)]
         assert len(update_calls) > 0
         assert (47, 1) in [call[0][1] for call in update_calls]
+
+    @patch('src.database_manager.get_db_connection')
+    def test_process_sale_transaction_prevents_negative_stock(self, mock_get_db):
+        """test that race condition protection prevents negative stock"""
+        from src.database_manager import process_sale_transaction
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.lastrowid = 104
+        # simulate race condition: stock was reduced to 2 by another transaction
+        mock_cursor.fetchone.return_value = {'quantity_on_hand': 2}
+
+        # try to sell 5 units when only 2 are available
+        cart = [{'product_id': 1, 'quantity': 5, 'price': 10.00}]
+        success, error_msg = process_sale_transaction(cart, 50.00)
+
+        assert success is False
+        assert isinstance(error_msg, str)
+        assert "Insufficient stock" in error_msg
+        assert "product 1" in error_msg
+        # verify rollback was called
+        mock_conn.rollback.assert_called_once()
+        # verify UPDATE was never called (transaction failed before update)
+        update_calls = [call for call in mock_cursor.execute.call_args_list
+                       if 'UPDATE booze' in str(call)]
+        assert len(update_calls) == 0

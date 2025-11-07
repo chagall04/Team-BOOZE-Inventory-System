@@ -257,6 +257,13 @@ def process_sale_transaction(cart_items, total_amount):
             current_stock = stock_result['quantity_on_hand']
             new_stock = current_stock - item['quantity']
             
+            # validate that stock won't go negative (race condition protection)
+            if new_stock < 0:
+                raise sqlite3.Error(
+                    f"Insufficient stock for product {item['product_id']}: "
+                    f"available {current_stock}, requested {item['quantity']}"
+                )
+            
             # update stock
             cursor.execute(
                 "UPDATE booze SET quantity_on_hand = ? WHERE id = ?",
