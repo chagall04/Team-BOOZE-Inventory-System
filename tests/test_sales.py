@@ -181,14 +181,10 @@ class TestProcessSale:
         assert success is False
         assert "empty cart" in message.lower()
 
-    @patch('src.sales.start_transaction')
-    @patch('src.sales.log_item_sale')
-    @patch('src.sales.adjust_stock')
-    def test_process_sale_success_single_item(self, mock_adjust, mock_log, mock_start):
+    @patch('src.sales.process_sale_transaction')
+    def test_process_sale_success_single_item(self, mock_transaction):
         """Test successful sale with single item"""
-        mock_start.return_value = 123
-        mock_log.return_value = True
-        mock_adjust.return_value = True
+        mock_transaction.return_value = (True, 123)
 
         cart = [{
             'product_id': 1,
@@ -201,18 +197,12 @@ class TestProcessSale:
         success, message = process_sale(cart)
         assert success is True
         assert "Transaction ID: 123" in message
-        mock_start.assert_called_once_with(21.00)
-        mock_log.assert_called_once_with(123, 1, 2, 10.50)
-        mock_adjust.assert_called_once_with(1, 48)
+        mock_transaction.assert_called_once_with(cart, 21.00)
 
-    @patch('src.sales.start_transaction')
-    @patch('src.sales.log_item_sale')
-    @patch('src.sales.adjust_stock')
-    def test_process_sale_success_multiple_items(self, mock_adjust, mock_log, mock_start):
+    @patch('src.sales.process_sale_transaction')
+    def test_process_sale_success_multiple_items(self, mock_transaction):
         """Test successful sale with multiple items"""
-        mock_start.return_value = 124
-        mock_log.return_value = True
-        mock_adjust.return_value = True
+        mock_transaction.return_value = (True, 124)
 
         cart = [
             {'product_id': 1, 'name': 'Product A', 'quantity': 2,
@@ -224,14 +214,12 @@ class TestProcessSale:
         success, message = process_sale(cart)
         assert success is True
         assert "Transaction ID: 124" in message
-        mock_start.assert_called_once_with(26.00)
-        assert mock_log.call_count == 2
-        assert mock_adjust.call_count == 2
+        mock_transaction.assert_called_once_with(cart, 26.00)
 
-    @patch('src.sales.start_transaction')
-    def test_process_sale_transaction_creation_fails(self, mock_start):
-        """Test sale failure when transaction creation fails"""
-        mock_start.return_value = None
+    @patch('src.sales.process_sale_transaction')
+    def test_process_sale_transaction_fails(self, mock_transaction):
+        """Test sale failure when transaction fails"""
+        mock_transaction.return_value = (False, "Database error")
 
         cart = [{
             'product_id': 1,
@@ -243,47 +231,7 @@ class TestProcessSale:
 
         success, message = process_sale(cart)
         assert success is False
-        assert "Failed to create transaction" in message
-
-    @patch('src.sales.start_transaction')
-    @patch('src.sales.log_item_sale')
-    def test_process_sale_log_item_fails(self, mock_log, mock_start):
-        """Test sale failure when logging item fails"""
-        mock_start.return_value = 125
-        mock_log.return_value = False
-
-        cart = [{
-            'product_id': 1,
-            'name': 'Test Product',
-            'quantity': 2,
-            'price': 10.50,
-            'current_stock': 50
-        }]
-
-        success, message = process_sale(cart)
-        assert success is False
-        assert "Failed to log sale" in message
-
-    @patch('src.sales.start_transaction')
-    @patch('src.sales.log_item_sale')
-    @patch('src.sales.adjust_stock')
-    def test_process_sale_adjust_stock_fails(self, mock_adjust, mock_log, mock_start):
-        """Test sale failure when stock adjustment fails"""
-        mock_start.return_value = 126
-        mock_log.return_value = True
-        mock_adjust.return_value = False
-
-        cart = [{
-            'product_id': 1,
-            'name': 'Test Product',
-            'quantity': 2,
-            'price': 10.50,
-            'current_stock': 50
-        }]
-
-        success, message = process_sale(cart)
-        assert success is False
-        assert "Failed to update stock" in message
+        assert "Database error" in message
 
 
 class TestRecordSale:

@@ -86,7 +86,7 @@ def show_clerk_menu():
     while True:
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
-        print("[3A] View Product Stock (Inventory Tracking)")
+        print("[3] View Product Stock (Inventory Tracking)")
         print("[0] Log Out")
         choice = input("Enter choice: ")
 

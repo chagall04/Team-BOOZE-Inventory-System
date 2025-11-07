@@ -6,9 +6,7 @@
 
 from src.database_manager import (
     get_product_details,
-    start_transaction,
-    log_item_sale,
-    adjust_stock
+    process_sale_transaction
 )
 
 
@@ -80,32 +78,22 @@ def display_cart(cart):
 def process_sale(cart):
     """
     scrum-37: process the sale transaction
-    creates transaction record, logs items, and updates inventory
+    creates transaction record, logs items, and updates inventory atomically
     returns (success, message)
     """
     if not cart:
         return False, "Cannot process empty cart"
 
-    # Calculate total
+    # calculate total
     total_amount = sum(item['price'] * item['quantity'] for item in cart)
 
-    # Create transaction record
-    transaction_id = start_transaction(total_amount)
-    if transaction_id is None:
-        return False, "Failed to create transaction record"
-
-    # Log each item and update stock
-    for item in cart:
-        # Log the item sale
-        if not log_item_sale(transaction_id, item['product_id'], item['quantity'], item['price']):
-            return False, f"Failed to log sale for {item['name']}"
-
-        # Adjust stock (scrum-28)
-        new_stock = item['current_stock'] - item['quantity']
-        if not adjust_stock(item['product_id'], new_stock):
-            return False, f"Failed to update stock for {item['name']}"
-
-    return True, f"Sale completed successfully! Transaction ID: {transaction_id}"
+    # process sale atomically (creates transaction, logs items, updates stock)
+    success, result = process_sale_transaction(cart, total_amount)
+    
+    if success:
+        return True, f"Sale completed successfully! Transaction ID: {result}"
+    else:
+        return False, f"Sale failed: {result}"
 
 
 def record_sale():

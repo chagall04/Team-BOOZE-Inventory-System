@@ -4,6 +4,7 @@
 This module provides database operations for users, products, and sales transactions.
 """
 import sqlite3
+from datetime import datetime
 import bcrypt
 
 DB_NAME = "inventory.db"
@@ -49,7 +50,7 @@ def create_user(username, password, role):
         return True, cursor.lastrowid
     except sqlite3.IntegrityError:
         return False, "username already exists"
-    except Exception as e:
+    except sqlite3.Error as e:
         return False, str(e)
     finally:
         conn.close()
@@ -68,7 +69,7 @@ def delete_user(username):
         if cursor.rowcount == 0:
             return False, "user not found"
         return True, "user deleted"
-    except Exception as e:
+    except sqlite3.Error as e:
         return False, str(e)
     finally:
         conn.close()
@@ -97,7 +98,7 @@ def insert_product(data):
         return True, cursor.lastrowid
     except sqlite3.IntegrityError:
         return False, "Product name already exists"
-    except Exception as e:
+    except sqlite3.Error as e:
         return False, str(e)
     finally:
         conn.close()
@@ -115,7 +116,7 @@ def adjust_stock(product_id, new_quantity):
                       (new_quantity, product_id))
         conn.commit()
         return cursor.rowcount > 0
-    except Exception:
+    except sqlite3.Error:
         return False
     finally:
         conn.close()
@@ -171,7 +172,6 @@ def start_transaction(total_amount):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             "INSERT INTO transactions (timestamp, total_amount) VALUES (?, ?)",
@@ -180,7 +180,7 @@ def start_transaction(total_amount):
         conn.commit()
         transaction_id = cursor.lastrowid
         return transaction_id
-    except Exception:
+    except sqlite3.Error:
         return None
     finally:
         conn.close()
@@ -202,7 +202,74 @@ def log_item_sale(transaction_id, product_id, quantity, price_at_sale):
         )
         conn.commit()
         return True
-    except Exception:
+    except sqlite3.Error:
         return False
+    finally:
+        conn.close()
+
+def process_sale_transaction(cart_items, total_amount):
+    """
+    scrum-12: atomic sale transaction with rollback support
+    processes entire sale as single transaction - creates transaction record,
+    logs all items, and updates stock atomically
+    
+    args:
+        cart_items: list of dicts with 'product_id', 'quantity', 'price'
+        total_amount: total sale amount
+    
+    returns:
+        (success: bool, transaction_id or error_message: str)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # start database transaction
+        cursor.execute("BEGIN TRANSACTION")
+        
+        # create transaction record
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            "INSERT INTO transactions (timestamp, total_amount) VALUES (?, ?)",
+            (timestamp, total_amount)
+        )
+        transaction_id = cursor.lastrowid
+        
+        # process each item in the cart
+        for item in cart_items:
+            # log the item sale
+            cursor.execute(
+                """INSERT INTO transaction_items
+                   (transaction_id, product_id, quantity, price_at_sale)
+                   VALUES (?, ?, ?, ?)""",
+                (transaction_id, item['product_id'], item['quantity'], item['price'])
+            )
+            
+            # get current stock (re-fetch to avoid stale data)
+            cursor.execute(
+                "SELECT quantity_on_hand FROM booze WHERE id = ?",
+                (item['product_id'],)
+            )
+            stock_result = cursor.fetchone()
+            if stock_result is None:
+                raise sqlite3.Error(f"Product {item['product_id']} not found")
+            
+            current_stock = stock_result['quantity_on_hand']
+            new_stock = current_stock - item['quantity']
+            
+            # update stock
+            cursor.execute(
+                "UPDATE booze SET quantity_on_hand = ? WHERE id = ?",
+                (new_stock, item['product_id'])
+            )
+        
+        # commit all changes atomically
+        conn.commit()
+        return True, transaction_id
+        
+    except sqlite3.Error as e:
+        # rollback all changes if anything failed
+        conn.rollback()
+        return False, str(e)
     finally:
         conn.close()
