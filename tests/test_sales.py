@@ -2,8 +2,9 @@
 # scrum-12 to scrum-13: sales management tests
 # owned by: sara larkem
 
-import pytest
-from unittest.mock import patch, MagicMock
+"""Comprehensive tests for sales management functionality."""
+
+from unittest.mock import patch
 from src.sales import (
     validate_product_input,
     validate_quantity_input,
@@ -16,56 +17,56 @@ from src.sales import (
 
 class TestInputValidation:
     """Test input validation functions"""
-    
+
     def test_validate_product_input_valid(self):
         """Test valid product ID input"""
         is_valid, product_id, error = validate_product_input("5")
         assert is_valid is True
         assert product_id == 5
         assert error is None
-    
+
     def test_validate_product_input_invalid_non_numeric(self):
         """Test invalid non-numeric product ID"""
         is_valid, product_id, error = validate_product_input("abc")
         assert is_valid is False
         assert product_id is None
         assert "valid number" in error
-    
+
     def test_validate_product_input_invalid_negative(self):
         """Test invalid negative product ID"""
         is_valid, product_id, error = validate_product_input("-1")
         assert is_valid is False
         assert product_id is None
         assert "positive number" in error
-    
+
     def test_validate_product_input_invalid_zero(self):
         """Test invalid zero product ID"""
         is_valid, product_id, error = validate_product_input("0")
         assert is_valid is False
         assert product_id is None
         assert "positive number" in error
-    
+
     def test_validate_quantity_input_valid(self):
         """Test valid quantity input"""
         is_valid, quantity, error = validate_quantity_input("10")
         assert is_valid is True
         assert quantity == 10
         assert error is None
-    
+
     def test_validate_quantity_input_invalid_non_numeric(self):
         """Test invalid non-numeric quantity"""
         is_valid, quantity, error = validate_quantity_input("xyz")
         assert is_valid is False
         assert quantity is None
         assert "valid number" in error
-    
+
     def test_validate_quantity_input_invalid_negative(self):
         """Test invalid negative quantity"""
         is_valid, quantity, error = validate_quantity_input("-5")
         assert is_valid is False
         assert quantity is None
         assert "positive number" in error
-    
+
     def test_validate_quantity_input_invalid_zero(self):
         """Test invalid zero quantity"""
         is_valid, quantity, error = validate_quantity_input("0")
@@ -76,7 +77,7 @@ class TestInputValidation:
 
 class TestStockAvailability:
     """Test stock availability checking (SCRUM-38)"""
-    
+
     @patch('src.sales.get_product_details')
     def test_check_stock_availability_success(self, mock_get_product):
         """Test successful stock availability check"""
@@ -86,12 +87,12 @@ class TestStockAvailability:
             'price': 10.50,
             'quantity_on_hand': 50
         }
-        
+
         is_available, product, error = check_stock_availability(1, 10)
         assert is_available is True
         assert product['name'] == 'Test Product'
         assert error is None
-    
+
     @patch('src.sales.get_product_details')
     def test_check_stock_availability_insufficient(self, mock_get_product):
         """Test insufficient stock scenario"""
@@ -101,24 +102,24 @@ class TestStockAvailability:
             'price': 10.50,
             'quantity_on_hand': 5
         }
-        
+
         is_available, product, error = check_stock_availability(1, 10)
         assert is_available is False
         assert product['name'] == 'Test Product'
         assert "Insufficient stock" in error
         assert "Available: 5" in error
         assert "Requested: 10" in error
-    
+
     @patch('src.sales.get_product_details')
     def test_check_stock_availability_product_not_found(self, mock_get_product):
         """Test product not found scenario"""
         mock_get_product.return_value = None
-        
+
         is_available, product, error = check_stock_availability(999, 10)
         assert is_available is False
         assert product is None
         assert "not found" in error
-    
+
     @patch('src.sales.get_product_details')
     def test_check_stock_availability_exact_stock(self, mock_get_product):
         """Test exact stock match scenario"""
@@ -128,7 +129,7 @@ class TestStockAvailability:
             'price': 10.50,
             'quantity_on_hand': 10
         }
-        
+
         is_available, product, error = check_stock_availability(1, 10)
         assert is_available is True
         assert product['quantity_on_hand'] == 10
@@ -137,13 +138,13 @@ class TestStockAvailability:
 
 class TestDisplayCart:
     """Test cart display function (SCRUM-40)"""
-    
+
     def test_display_cart_empty(self, capsys):
         """Test displaying empty cart"""
         display_cart([])
         captured = capsys.readouterr()
         assert "Cart is empty" in captured.out
-    
+
     def test_display_cart_single_item(self, capsys):
         """Test displaying cart with single item"""
         cart = [{
@@ -157,7 +158,7 @@ class TestDisplayCart:
         assert "Quantity: 2" in captured.out
         assert "$21.00" in captured.out
         assert "Total: $21.00" in captured.out
-    
+
     def test_display_cart_multiple_items(self, capsys):
         """Test displaying cart with multiple items"""
         cart = [
@@ -173,13 +174,13 @@ class TestDisplayCart:
 
 class TestProcessSale:
     """Test process_sale function (SCRUM-37)"""
-    
+
     def test_process_sale_empty_cart(self):
         """Test processing empty cart"""
         success, message = process_sale([])
         assert success is False
         assert "empty cart" in message.lower()
-    
+
     @patch('src.sales.start_transaction')
     @patch('src.sales.log_item_sale')
     @patch('src.sales.adjust_stock')
@@ -188,7 +189,7 @@ class TestProcessSale:
         mock_start.return_value = 123
         mock_log.return_value = True
         mock_adjust.return_value = True
-        
+
         cart = [{
             'product_id': 1,
             'name': 'Test Product',
@@ -196,14 +197,14 @@ class TestProcessSale:
             'price': 10.50,
             'current_stock': 50
         }]
-        
+
         success, message = process_sale(cart)
         assert success is True
         assert "Transaction ID: 123" in message
         mock_start.assert_called_once_with(21.00)
         mock_log.assert_called_once_with(123, 1, 2, 10.50)
         mock_adjust.assert_called_once_with(1, 48)
-    
+
     @patch('src.sales.start_transaction')
     @patch('src.sales.log_item_sale')
     @patch('src.sales.adjust_stock')
@@ -212,24 +213,26 @@ class TestProcessSale:
         mock_start.return_value = 124
         mock_log.return_value = True
         mock_adjust.return_value = True
-        
+
         cart = [
-            {'product_id': 1, 'name': 'Product A', 'quantity': 2, 'price': 10.50, 'current_stock': 50},
-            {'product_id': 2, 'name': 'Product B', 'quantity': 1, 'price': 5.00, 'current_stock': 30}
+            {'product_id': 1, 'name': 'Product A', 'quantity': 2,
+             'price': 10.50, 'current_stock': 50},
+            {'product_id': 2, 'name': 'Product B', 'quantity': 1,
+             'price': 5.00, 'current_stock': 30}
         ]
-        
+
         success, message = process_sale(cart)
         assert success is True
         assert "Transaction ID: 124" in message
         mock_start.assert_called_once_with(26.00)
         assert mock_log.call_count == 2
         assert mock_adjust.call_count == 2
-    
+
     @patch('src.sales.start_transaction')
     def test_process_sale_transaction_creation_fails(self, mock_start):
         """Test sale failure when transaction creation fails"""
         mock_start.return_value = None
-        
+
         cart = [{
             'product_id': 1,
             'name': 'Test Product',
@@ -237,18 +240,18 @@ class TestProcessSale:
             'price': 10.50,
             'current_stock': 50
         }]
-        
+
         success, message = process_sale(cart)
         assert success is False
         assert "Failed to create transaction" in message
-    
+
     @patch('src.sales.start_transaction')
     @patch('src.sales.log_item_sale')
     def test_process_sale_log_item_fails(self, mock_log, mock_start):
         """Test sale failure when logging item fails"""
         mock_start.return_value = 125
         mock_log.return_value = False
-        
+
         cart = [{
             'product_id': 1,
             'name': 'Test Product',
@@ -256,11 +259,11 @@ class TestProcessSale:
             'price': 10.50,
             'current_stock': 50
         }]
-        
+
         success, message = process_sale(cart)
         assert success is False
         assert "Failed to log sale" in message
-    
+
     @patch('src.sales.start_transaction')
     @patch('src.sales.log_item_sale')
     @patch('src.sales.adjust_stock')
@@ -269,7 +272,7 @@ class TestProcessSale:
         mock_start.return_value = 126
         mock_log.return_value = True
         mock_adjust.return_value = False
-        
+
         cart = [{
             'product_id': 1,
             'name': 'Test Product',
@@ -277,7 +280,7 @@ class TestProcessSale:
             'price': 10.50,
             'current_stock': 50
         }]
-        
+
         success, message = process_sale(cart)
         assert success is False
         assert "Failed to update stock" in message
@@ -285,15 +288,15 @@ class TestProcessSale:
 
 class TestRecordSale:
     """Test main record_sale function (SCRUM-12, SCRUM-39)"""
-    
+
     @patch('builtins.input')
     def test_record_sale_cancel_immediately(self, mock_input):
         """Test cancelling sale immediately"""
         mock_input.side_effect = ['0']
-        
+
         result = record_sale()
         assert result is False
-    
+
     @patch('builtins.input')
     @patch('src.sales.check_stock_availability')
     @patch('src.sales.process_sale')
@@ -313,11 +316,11 @@ class TestRecordSale:
             'quantity_on_hand': 50
         }, None)
         mock_process.return_value = (True, "Sale completed successfully! Transaction ID: 100")
-        
+
         result = record_sale()
         assert result is True
         mock_process.assert_called_once()
-    
+
     @patch('builtins.input')
     def test_record_sale_invalid_product_id(self, mock_input):
         """Test handling invalid product ID input"""
@@ -326,10 +329,10 @@ class TestRecordSale:
             'abc',    # Invalid product ID
             '0'       # Exit
         ]
-        
+
         result = record_sale()
         assert result is False
-    
+
     @patch('builtins.input')
     def test_record_sale_invalid_quantity(self, mock_input):
         """Test handling invalid quantity input"""
@@ -339,10 +342,10 @@ class TestRecordSale:
             '-5',     # Invalid quantity
             '0'       # Exit
         ]
-        
+
         result = record_sale()
         assert result is False
-    
+
     @patch('builtins.input')
     @patch('src.sales.check_stock_availability')
     def test_record_sale_insufficient_stock(self, mock_check, mock_input):
@@ -354,10 +357,10 @@ class TestRecordSale:
             '0'       # Exit
         ]
         mock_check.return_value = (False, None, "Insufficient stock")
-        
+
         result = record_sale()
         assert result is False
-    
+
     @patch('builtins.input')
     @patch('src.sales.check_stock_availability')
     def test_record_sale_view_cart(self, mock_check, mock_input, capsys):
@@ -375,24 +378,23 @@ class TestRecordSale:
             'price': 10.50,
             'quantity_on_hand': 50
         }, None)
-        
+
         result = record_sale()
         captured = capsys.readouterr()
         assert "Test Product" in captured.out
         assert result is False
-    
+
     @patch('builtins.input')
-    @patch('src.sales.check_stock_availability')
-    def test_record_sale_complete_empty_cart(self, mock_check, mock_input):
+    def test_record_sale_complete_empty_cart(self, mock_input):
         """Test attempting to complete sale with empty cart"""
         mock_input.side_effect = [
             '3',      # Complete sale (empty cart)
             '0'       # Exit
         ]
-        
+
         result = record_sale()
         assert result is False
-    
+
     @patch('builtins.input')
     @patch('src.sales.check_stock_availability')
     @patch('src.sales.process_sale')
@@ -411,11 +413,11 @@ class TestRecordSale:
             'price': 10.50,
             'quantity_on_hand': 50
         }, None)
-        
+
         result = record_sale()
         assert result is False
         mock_process.assert_not_called()
-    
+
     @patch('builtins.input')
     @patch('src.sales.check_stock_availability')
     @patch('src.sales.process_sale')
@@ -435,10 +437,10 @@ class TestRecordSale:
             'quantity_on_hand': 50
         }, None)
         mock_process.return_value = (False, "Database error")
-        
+
         result = record_sale()
         assert result is False
-    
+
     @patch('builtins.input')
     @patch('src.sales.check_stock_availability')
     @patch('src.sales.process_sale')
@@ -459,13 +461,13 @@ class TestRecordSale:
             (True, {'id': 2, 'name': 'Product B', 'price': 5.00, 'quantity_on_hand': 30}, None)
         ]
         mock_process.return_value = (True, "Sale completed successfully! Transaction ID: 100")
-        
+
         result = record_sale()
         assert result is True
         # Verify process_sale was called with a cart containing 2 items
         call_args = mock_process.call_args[0][0]
         assert len(call_args) == 2
-    
+
     @patch('builtins.input')
     def test_record_sale_invalid_menu_choice(self, mock_input):
         """Test handling invalid menu choice"""
@@ -473,7 +475,6 @@ class TestRecordSale:
             '99',     # Invalid choice
             '0'       # Exit
         ]
-        
+
         result = record_sale()
         assert result is False
-
