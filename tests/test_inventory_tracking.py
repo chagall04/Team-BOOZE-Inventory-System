@@ -67,6 +67,7 @@ def test_adjust_stock_valid_update():
     
     # Verify the update
     updated = get_stock_by_id(1)
+    assert updated is not None
     assert updated['quantity'] == 60
 
 def test_adjust_stock_invalid_product():
@@ -84,6 +85,7 @@ def test_receive_new_stock_success(mock_input):
     
     # Verify final stock level
     updated = get_stock_by_id(1)
+    assert updated is not None
     assert updated['quantity'] == 60  # 50 + 10
 
 @patch('builtins.input', side_effect=['abc', '10'])
@@ -116,6 +118,7 @@ def test_receive_new_stock_negative_quantity(mock_input):
     
     # Verify stock wasn't changed
     current = get_stock_by_id(1)
+    assert current is not None
     assert current['quantity'] == 50
 
 @patch('builtins.input', side_effect=['1', '10'])

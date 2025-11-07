@@ -30,6 +30,7 @@ class TestInputValidation:
         is_valid, product_id, error = validate_product_input("abc")
         assert is_valid is False
         assert product_id is None
+        assert error is not None
         assert "valid number" in error
 
     def test_validate_product_input_invalid_negative(self):
@@ -37,6 +38,7 @@ class TestInputValidation:
         is_valid, product_id, error = validate_product_input("-1")
         assert is_valid is False
         assert product_id is None
+        assert error is not None
         assert "positive number" in error
 
     def test_validate_product_input_invalid_zero(self):
@@ -44,6 +46,7 @@ class TestInputValidation:
         is_valid, product_id, error = validate_product_input("0")
         assert is_valid is False
         assert product_id is None
+        assert error is not None
         assert "positive number" in error
 
     def test_validate_quantity_input_valid(self):
@@ -58,6 +61,7 @@ class TestInputValidation:
         is_valid, quantity, error = validate_quantity_input("xyz")
         assert is_valid is False
         assert quantity is None
+        assert error is not None
         assert "valid number" in error
 
     def test_validate_quantity_input_invalid_negative(self):
@@ -65,6 +69,7 @@ class TestInputValidation:
         is_valid, quantity, error = validate_quantity_input("-5")
         assert is_valid is False
         assert quantity is None
+        assert error is not None
         assert "positive number" in error
 
     def test_validate_quantity_input_invalid_zero(self):
@@ -72,6 +77,7 @@ class TestInputValidation:
         is_valid, quantity, error = validate_quantity_input("0")
         assert is_valid is False
         assert quantity is None
+        assert error is not None
         assert "positive number" in error
 
 
