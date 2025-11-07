@@ -90,6 +90,7 @@ class TestStockAvailability:
 
         is_available, product, error = check_stock_availability(1, 10)
         assert is_available is True
+        assert product is not None
         assert product['name'] == 'Test Product'
         assert error is None
 
@@ -105,7 +106,9 @@ class TestStockAvailability:
 
         is_available, product, error = check_stock_availability(1, 10)
         assert is_available is False
+        assert product is not None
         assert product['name'] == 'Test Product'
+        assert error is not None
         assert "Insufficient stock" in error
         assert "Available: 5" in error
         assert "Requested: 10" in error
@@ -118,6 +121,7 @@ class TestStockAvailability:
         is_available, product, error = check_stock_availability(999, 10)
         assert is_available is False
         assert product is None
+        assert error is not None
         assert "not found" in error
 
     @patch('src.sales.get_product_details')
@@ -132,6 +136,7 @@ class TestStockAvailability:
 
         is_available, product, error = check_stock_availability(1, 10)
         assert is_available is True
+        assert product is not None
         assert product['quantity_on_hand'] == 10
         assert error is None
 
@@ -153,6 +158,7 @@ class TestStockAvailability:
         # Try to add 6 more units (total would be 12, but only 10 available)
         is_available, _product, error = check_stock_availability(1, 6, existing_cart)
         assert is_available is False
+        assert error is not None
         assert "Insufficient stock" in error
         assert "Already in cart: 6" in error
         assert "Requested: 6" in error
@@ -178,6 +184,7 @@ class TestStockAvailability:
         # Try to add 14 more (total would be 21, but only 20 available)
         is_available, _product, error = check_stock_availability(5, 14, existing_cart)
         assert is_available is False
+        assert error is not None
         assert "Already in cart: 7" in error
 
     @patch('src.sales.get_product_details')

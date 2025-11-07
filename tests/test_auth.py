@@ -75,6 +75,8 @@ class TestCreateAccount:
         success, message = create_account("newuser", "password123", "Clerk")
         
         assert success is True
+        assert message is not None
+        assert isinstance(message, str)
         assert "created successfully" in message
         mock_create_user.assert_called_once_with("newuser", "password123", "Clerk")
     
@@ -84,6 +86,8 @@ class TestCreateAccount:
         success, message = create_account("ab", "password123", "Clerk")
         
         assert success is False
+        assert message is not None
+        assert isinstance(message, str)
         assert "3 characters" in message
         mock_create_user.assert_not_called()
     
@@ -93,6 +97,8 @@ class TestCreateAccount:
         success, message = create_account("validuser", "12345", "Clerk")
         
         assert success is False
+        assert message is not None
+        assert isinstance(message, str)
         assert "6 characters" in message
         mock_create_user.assert_not_called()
     
@@ -102,6 +108,8 @@ class TestCreateAccount:
         success, message = create_account("validuser", "password123", "Admin")
         
         assert success is False
+        assert message is not None
+        assert isinstance(message, str)
         assert "Manager or Clerk" in message
         mock_create_user.assert_not_called()
     
@@ -113,6 +121,8 @@ class TestCreateAccount:
         success, message = create_account("existinguser", "password123", "Clerk")
         
         assert success is False
+        assert message is not None
+        assert isinstance(message, str)
         assert "username already exists" in message
 
 

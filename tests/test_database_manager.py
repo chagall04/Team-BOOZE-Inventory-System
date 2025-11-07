@@ -78,6 +78,8 @@ class TestCreateUser:
         success, result = create_user("existing", "password123", "Clerk")
         
         assert success is False
+        assert result is not None
+        assert isinstance(result, str)
         assert "already exists" in result
     
     @patch('src.database_manager.get_db_connection')
@@ -236,6 +238,8 @@ class TestInsertProduct:
         success, result = insert_product(product_data)
         
         assert success is False
+        assert result is not None
+        assert isinstance(result, str)
         assert "already exists" in result
         mock_conn.close.assert_called_once()
     
@@ -259,6 +263,8 @@ class TestInsertProduct:
         success, result = insert_product(product_data)
         
         assert success is False
+        assert result is not None
+        assert isinstance(result, str)
         assert "database connection error" in result
         mock_conn.close.assert_called_once()
 
