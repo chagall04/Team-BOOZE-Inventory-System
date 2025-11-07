@@ -2,9 +2,18 @@
 # scrum-17 to scrum-22: app tests
 # owned by: charlie gallagher
 
-import pytest
-from unittest.mock import patch, MagicMock
-from src.app import main, show_manager_menu, show_clerk_menu, show_account_menu, handle_create_account, handle_delete_account
+"""Tests for main application entry point and menu systems."""
+
+from unittest.mock import patch
+from src.app import (
+    main,
+    show_manager_menu,
+    show_clerk_menu,
+    show_account_menu,
+    handle_create_account,
+    handle_delete_account
+)
+
 
 
 class TestAccountMenu:

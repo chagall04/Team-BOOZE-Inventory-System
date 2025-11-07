@@ -20,9 +20,9 @@ def validate_numeric_value(value, field_name, convert_func, min_value=None, max_
         if min_value is not None and num_value < min_value:
             if field_name == "Price":
                 return [f"{field_name} must be non-negative"], None
-            elif field_name == "Initial stock":
+            if field_name == "Initial stock":
                 return [f"{field_name} quantity must be non-negative"], None
-            elif field_name == "Volume" and min_value == 1:
+            if field_name == "Volume" and min_value == 1:
                 return [f"{field_name} must be greater than 0"], None
             return [f"{field_name} must be between 0 and {max_value}"], None
         if max_value is not None and num_value > max_value:
@@ -32,8 +32,7 @@ def validate_numeric_value(value, field_name, convert_func, min_value=None, max_
         if convert_func == int:
             if field_name == "Initial stock":
                 return [f"{field_name} must be a valid whole number"], None
-            else:
-                return [f"{field_name} must be a valid number"], None
+            return [f"{field_name} must be a valid number"], None
         return [f"{field_name} must be a valid number"], None
 
 def validate_product_data(name, brand, type_, price, quantity, abv=None, volume_ml=None):
@@ -121,9 +120,8 @@ def add_new_product():
     if success:
         print(f"\nSuccess! Product '{name}' has been added with ID: {result}")
         return True
-    else:
-        print(f"\nError: Failed to add product - {result}")
-        return False
+    print(f"\nError: Failed to add product - {result}")
+    return False
 
 # --- Backlog (Not in Sprint 1) ---
 # SCRUM-6 (Update Product) and SCRUM-7 (View All Products)

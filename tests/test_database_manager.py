@@ -2,10 +2,12 @@
 # scrum-17 to scrum-22: database manager tests
 # owned by: charlie gallagher
 
-import pytest
+"""Tests for database operations including users, products, and transactions."""
+
 import sqlite3
 from unittest.mock import patch, MagicMock
 from src.database_manager import get_user_by_username, create_user, delete_user, insert_product
+
 
 
 class TestGetUserByUsername:

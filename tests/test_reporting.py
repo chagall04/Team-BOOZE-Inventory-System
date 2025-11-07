@@ -2,12 +2,12 @@
 # scrum-14 to scrum-16: reporting tests (placeholder)
 # owned by: charlie gallagher
 
-import pytest
+"""Placeholder tests for reporting functionality (future sprint)."""
 
 
 class TestInventoryReports:
     """placeholder test class for inventory reporting"""
-    
+
     def test_placeholder_low_stock_report(self):
         """placeholder: test low stock report generation"""
         # todo: implement when scrum-14 is developed

@@ -3,11 +3,12 @@ SCRUM-31: Unit tests for inventory tracking functionality
 Tests the receive_new_stock function and its dependent database functions
 """
 
-import pytest
-from unittest.mock import patch
-import sqlite3
 import os
-from src.database_manager import get_stock_by_id, adjust_stock, DB_NAME
+import sqlite3
+from unittest.mock import patch
+import pytest
+from src.database_manager import get_stock_by_id, adjust_stock
+
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
@@ -169,6 +170,6 @@ def test_view_current_stock_product_not_found(mock_get_stock, mock_input, capsys
     
     result = view_current_stock()
     assert result is False
-    
+
     captured = capsys.readouterr()
     assert "Error: Product with ID 999 not found" in captured.out

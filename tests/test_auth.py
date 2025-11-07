@@ -2,11 +2,14 @@
 # scrum-17 to scrum-22: authentication tests
 # owned by: charlie gallagher
 
-import pytest
+"""Tests for user authentication and account management."""
+
 import sqlite3
-import bcrypt
 from unittest.mock import patch
+import pytest
+import bcrypt
 from src.auth import login, create_account, delete_account
+
 
 
 class TestLogin:

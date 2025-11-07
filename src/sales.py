@@ -102,11 +102,11 @@ def process_sale(cart):
 
     # process sale atomically (creates transaction, logs items, updates stock)
     success, result = process_sale_transaction(cart, total_amount)
-    
+
     if success:
         return True, f"Sale completed successfully! Transaction ID: {result}"
-    else:
-        return False, f"Sale failed: {result}"
+    return False, f"Sale failed: {result}"
+
 
 
 def record_sale():
@@ -191,12 +191,10 @@ def record_sale():
                 if success:
                     print(f"\n{message}")
                     return True
-                else:
-                    print(f"\nError: {message}")
-                    return False
-            else:
-                print("Sale cancelled.")
+                print(f"\nError: {message}")
                 return False
+            print("Sale cancelled.")
+            return False
 
         elif choice == '0':
             print("Sale cancelled.")

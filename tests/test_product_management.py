@@ -1,6 +1,7 @@
-import pytest
-import pytest
+"""Tests for product management functionality including validation and addition."""
+
 from unittest.mock import patch
+import pytest
 from src.product_management import add_new_product, validate_product_data
 
 # Test data for validation scenarios
@@ -66,11 +67,11 @@ def test_add_new_product_success(optional_fields):
             
             # Execute
             result = add_new_product()
-            
+
             # Verify
-            assert result == True
+            assert result is True
             mock_insert.assert_called_once()
-            
+
             # Verify data sent to database
             call_args = mock_insert.call_args[0][0]
             assert call_args['name'] == "Test Product"
@@ -94,12 +95,12 @@ def test_add_new_product_db_error():
                 ""            # description (optional)
             ]
             mock_insert.return_value = (False, "Product name already exists")
-            
+
             # Execute
             result = add_new_product()
-            
+
             # Verify
-            assert result == False
+            assert result is False
             mock_insert.assert_called_once()
 @pytest.mark.parametrize("test_id,name,brand,type_,price,quantity,abv,volume,expected_valid,expected_error", [
     # Happy paths
@@ -244,7 +245,7 @@ def test_add_new_product_validation_failure():
     with patch('builtins.input', side_effect=mock_inputs), \
          patch('builtins.print') as mock_print:
         result = add_new_product()
-        assert result == False
+        assert result is False
         mock_print.assert_any_call("\nError: Invalid product data:")
         mock_print.assert_any_call("- Product name is required")
 
@@ -266,5 +267,5 @@ def test_add_new_product_db_failure():
          patch('src.product_management.insert_product', return_value=(False, "Database error")), \
          patch('builtins.print') as mock_print:
         result = add_new_product()
-        assert result == False
+        assert result is False
         mock_print.assert_any_call("\nError: Failed to add product - Database error")
