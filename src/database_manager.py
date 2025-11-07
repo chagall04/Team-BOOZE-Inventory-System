@@ -49,7 +49,7 @@ def create_user(username, password, role):
         conn.commit()
         return True, cursor.lastrowid
     except sqlite3.IntegrityError:
-        return False, "username already exists"
+        return False, "Username already exists"
     except sqlite3.Error as e:
         return False, str(e)
     finally:
@@ -67,8 +67,8 @@ def delete_user(username):
         cursor.execute("DELETE FROM users WHERE username = ?", (username,))
         conn.commit()
         if cursor.rowcount == 0:
-            return False, "user not found"
-        return True, "user deleted"
+            return False, "User not found"
+        return True, "User deleted"
     except sqlite3.Error as e:
         return False, str(e)
     finally:
