@@ -7,6 +7,7 @@ This module handles the user interface and menu navigation.
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
 from .sales import record_sale
+from .inventory_tracking import receive_new_stock, view_current_stock
 
 
 def show_account_menu():
@@ -93,11 +94,9 @@ def show_clerk_menu():
         if choice == '1':
             record_sale()
         elif choice == '2':
-            # todo: hook up séan's receive_new_stock() here
-            print("Receive stock function not yet implemented.")
+            receive_new_stock()
         elif choice == '3':
-            # todo: hook up séan's view_current_stock() here
-            print("View stock function not yet implemented.")
+            view_current_stock()
         elif choice == '0':
             print("Logging out...")
             break

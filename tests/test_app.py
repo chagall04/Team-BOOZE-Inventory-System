@@ -250,24 +250,28 @@ class TestClerkMenu:
         mock_record_sale.assert_called_once()
         mock_input.assert_called()
     
+    @patch('src.app.receive_new_stock')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_clerk_menu_receive_stock(self, mock_print, mock_input):
-        """test clerk can access receive stock (not yet implemented)"""
+    def test_clerk_menu_receive_stock(self, mock_print, mock_input, mock_receive_stock):
+        """test clerk can access receive stock"""
         mock_input.side_effect = ["2", "0"]
         
         show_clerk_menu()
         
+        mock_receive_stock.assert_called_once()
         mock_input.assert_called()
     
+    @patch('src.app.view_current_stock')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_clerk_menu_view_stock(self, mock_print, mock_input):
-        """test clerk can access view stock (not yet implemented)"""
+    def test_clerk_menu_view_stock(self, mock_print, mock_input, mock_view_stock):
+        """test clerk can access view stock"""
         mock_input.side_effect = ["3", "0"]
         
         show_clerk_menu()
         
+        mock_view_stock.assert_called_once()
         mock_input.assert_called()
     
     @patch('builtins.input')
