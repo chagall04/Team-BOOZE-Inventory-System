@@ -131,8 +131,8 @@ def test_add_new_product_db_error():
     ("valid_high_quantity", "Beer X", "Brand Y", "Beer", "5.99", "999999", None, None, True, None),
     ("valid_max_abv", "Beer X", "Brand Y", "Beer", "5.99", "10", "100", None, True, None),
 ])
-def test_validate_product_data(test_id, name, brand, type_, price, quantity, abv, volume, expected_valid, expected_error):
-    """Test product data validation with various scenarios"""
+def test_validate_product_data_edge_cases(test_id, name, brand, type_, price, quantity, abv, volume, expected_valid, expected_error):
+    """Test product data validation with edge case scenarios"""
     is_valid, errors = validate_product_data(name, brand, type_, price, quantity, abv, volume)
     assert is_valid == expected_valid
     if expected_error:

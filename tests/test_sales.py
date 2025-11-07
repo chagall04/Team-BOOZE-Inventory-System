@@ -151,7 +151,7 @@ class TestStockAvailability:
         ]
 
         # Try to add 6 more units (total would be 12, but only 10 available)
-        is_available, product, error = check_stock_availability(1, 6, existing_cart)
+        is_available, _product, error = check_stock_availability(1, 6, existing_cart)
         assert is_available is False
         assert "Insufficient stock" in error
         assert "Already in cart: 6" in error
@@ -176,7 +176,7 @@ class TestStockAvailability:
         ]
 
         # Try to add 14 more (total would be 21, but only 20 available)
-        is_available, product, error = check_stock_availability(5, 14, existing_cart)
+        is_available, _product, error = check_stock_availability(5, 14, existing_cart)
         assert is_available is False
         assert "Already in cart: 7" in error
 
@@ -196,7 +196,7 @@ class TestStockAvailability:
         ]
 
         # Try to add 8 more (total 13, within 15 available)
-        is_available, product, error = check_stock_availability(2, 8, existing_cart)
+        is_available, _product, error = check_stock_availability(2, 8, existing_cart)
         assert is_available is True
         assert error is None
 

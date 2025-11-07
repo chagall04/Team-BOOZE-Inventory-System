@@ -1,0 +1,75 @@
+[MAIN]
+# Use multiple processes to speed up Pylint
+jobs=4
+
+# Python code to execute, usually for sys.path manipulation such as pygtk.require()
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+# Disable specific warnings that are false positives or not applicable to test code
+disable=
+    # Test-specific patterns that are intentional
+    unused-argument,        # Pytest fixtures often appear unused (mock_print, mock_input, etc.)
+    redefined-outer-name,   # Pytest fixtures intentionally redefine names
+    import-outside-toplevel, # Tests often import inside functions for isolation
+    too-few-public-methods, # Test classes don't need multiple methods
+
+    # Code complexity warnings that are acceptable in this project
+    too-many-arguments,     # Some functions legitimately need many parameters (especially tests)
+    too-many-positional-arguments, # Related to above
+    too-many-branches,      # record_sale() has complex flow which is clear
+    too-many-return-statements, # validate_numeric_value has clear validation logic
+
+    # Formatting issues
+    trailing-whitespace,    # Handled by editor auto-format
+    line-too-long,          # Set to 120, some test lines legitimately exceed
+
+    # Documentation warnings (already have docstrings where needed)
+    missing-function-docstring, # Not all test functions need docstrings
+
+    # Other acceptable patterns
+    fixme,                  # TODO/FIXME comments are intentional placeholders
+    unnecessary-pass,       # Placeholder tests use pass statements
+    unused-variable,        # Some test return values intentionally unused (_result, _product, etc.)
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=120
+
+# Allow the body of an if to be on the same line as the test if there is no else
+single-line-if-stmt=no
+
+[BASIC]
+# Good variable names which should always be accepted, separated by a comma
+good-names=i,j,k,ex,Run,_,id,db
+
+# Include a hint for the correct naming format with invalid-name
+include-naming-hint=yes
+
+[DESIGN]
+# Maximum number of arguments for function / method (increased for tests)
+max-args=10
+
+# Maximum number of branch for function / method body (increased for complex UI flows)
+max-branches=15
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=10
+
+# Ignore imports when computing similarities
+ignore-imports=yes
+
+[TYPECHECK]
+# List of members which are set dynamically and missed by pylint inference system
+generated-members=
+
+[REPORTS]
+# Set the output format
+output-format=text
+
+# Tells whether to display a full report or only the messages
+reports=no
+
+# Activate the evaluation score
+score=yes

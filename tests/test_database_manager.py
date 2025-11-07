@@ -88,9 +88,9 @@ class TestCreateUser:
         mock_get_db.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.execute.side_effect = sqlite3.Error("db connection error")
-        
-        success, result = create_user("user", "pass", "Clerk")
-        
+
+        success, _result = create_user("user", "pass", "Clerk")
+
         assert success is False
 
 
@@ -105,13 +105,13 @@ class TestDeleteUser:
         mock_get_db.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.rowcount = 1
-        
-        success, result = delete_user("testuser")
-        
+
+        success, _result = delete_user("testuser")
+
         assert success is True
         mock_cursor.execute.assert_called_once()
         mock_conn.commit.assert_called_once()
-    
+
     @patch('src.database_manager.get_db_connection')
     def test_delete_user_not_found(self, mock_get_db):
         """test deleting non-existent user"""
@@ -475,13 +475,13 @@ class TestSalesDatabaseFunctions:
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.lastrowid = 103
         mock_cursor.fetchone.return_value = {'quantity_on_hand': 50}
-        
+
         cart = [{'product_id': 1, 'quantity': 3, 'price': 21.00}]
-        success, result = process_sale_transaction(cart, 21.00)
-        
+        success, _result = process_sale_transaction(cart, 21.00)
+
         assert success is True
         # verify UPDATE was called with correct new_stock (50 - 3 = 47)
-        update_calls = [call for call in mock_cursor.execute.call_args_list 
+        update_calls = [call for call in mock_cursor.execute.call_args_list
                        if 'UPDATE booze' in str(call)]
         assert len(update_calls) > 0
         assert (47, 1) in [call[0][1] for call in update_calls]

@@ -129,12 +129,12 @@ class TestDeleteAccount:
             "role": "Clerk"
         }
         mock_delete_user.return_value = (True, "user deleted")
-        
-        success, message = delete_account("testuser", "password123")
-        
+
+        success, _message = delete_account("testuser", "password123")
+
         assert success is True
         mock_delete_user.assert_called_once_with("testuser")
-    
+
     @patch('src.auth.delete_user')
     @patch('src.auth.get_user_by_username')
     def test_delete_account_wrong_password(self, mock_get_user, mock_delete_user):
