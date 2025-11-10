@@ -87,8 +87,8 @@ def display_cart(cart):
         item_total = item['price'] * item['quantity']
         total += item_total
         print(f"{item['name']} - Quantity: {item['quantity']} @ "
-              f"${item['price']:.2f} = ${item_total:.2f}")
-    print(f"Total: ${total:.2f}")
+              f"€{item['price']:.2f} = €{item_total:.2f}")
+    print(f"Total: €{total:.2f}")
 
 
 def process_sale(cart):

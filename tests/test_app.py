@@ -193,15 +193,32 @@ class TestManagerMenu:
         
         mock_add_product.assert_called_once()
     
+    @patch('src.app.generate_low_stock_report')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_manager_menu_view_inventory_report(self, mock_print, mock_input):
-        """test manager can access inventory report (not yet implemented)"""
-        mock_input.side_effect = ["2", "0"]
+    def test_manager_menu_view_inventory_report(self, mock_print, mock_input, mock_report):
+        """test manager can access inventory report (SCRUM-14, SCRUM-58)"""
+        mock_input.side_effect = ["2", "20", "0"]
+        mock_report.return_value = "Low Stock Report"
         
         show_manager_menu()
         
         mock_input.assert_called()
+        mock_report.assert_called_once_with(20)
+    
+    @patch('src.app.generate_low_stock_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_manager_menu_view_inventory_report_invalid_threshold(self, mock_print, mock_input, mock_report):
+        """test manager menu handles invalid threshold input (SCRUM-14, SCRUM-58)"""
+        mock_input.side_effect = ["2", "invalid", "0"]
+        mock_report.return_value = "Low Stock Report"
+        
+        show_manager_menu()
+        
+        mock_input.assert_called()
+        # should call with default threshold of 20 due to ValueError
+        mock_report.assert_called_once_with(20)
     
     @patch('builtins.input')
     @patch('builtins.print')
