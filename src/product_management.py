@@ -82,7 +82,7 @@ def add_new_product():
     name = input("Product Name: ").strip()
     brand = input("Brand: ").strip()
     type_ = input("Type (e.g., Beer, Wine, Spirit): ").strip()
-    price = input("Price: $").strip()
+    price = input("Price (€): ").strip()
     quantity = input("Initial Stock Quantity: ").strip()
 
     # Optional details

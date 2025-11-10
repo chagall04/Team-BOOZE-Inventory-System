@@ -207,6 +207,49 @@ def log_item_sale(transaction_id, product_id, quantity, price_at_sale):
     finally:
         conn.close()
 
+# low stock reporting functions (scrum-14, scrum-56)
+def get_low_stock_report(threshold):
+    """
+    scrum-56: query database for all products with stock below threshold
+    
+    args:
+        threshold: stock level threshold (e.g., 20 units)
+    
+    returns:
+        list of dicts with product info, sorted by quantity ascending
+        each dict contains: id, name, brand, quantity_on_hand, price
+        returns empty list if no products below threshold
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT id, name, brand, quantity_on_hand, price 
+               FROM booze 
+               WHERE quantity_on_hand < ? 
+               ORDER BY quantity_on_hand ASC""",
+            (threshold,)
+        )
+        results = cursor.fetchall()
+        
+        # convert Row objects to dictionaries
+        low_stock_products = []
+        for row in results:
+            low_stock_products.append({
+                "id": row["id"],
+                "name": row["name"],
+                "brand": row["brand"],
+                "quantity_on_hand": row["quantity_on_hand"],
+                "price": row["price"]
+            })
+        
+        return low_stock_products
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()
+
+
 def process_sale_transaction(cart_items, total_amount):
     """
     scrum-12: atomic sale transaction with rollback support

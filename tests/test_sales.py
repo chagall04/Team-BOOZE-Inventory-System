@@ -234,8 +234,8 @@ class TestDisplayCart:
         captured = capsys.readouterr()
         assert "Product A" in captured.out
         assert "Quantity: 2" in captured.out
-        assert "$21.00" in captured.out
-        assert "Total: $21.00" in captured.out
+        assert "€21.00" in captured.out
+        assert "Total: €21.00" in captured.out
 
     def test_display_cart_multiple_items(self, capsys):
         """Test displaying cart with multiple items"""
@@ -247,7 +247,7 @@ class TestDisplayCart:
         captured = capsys.readouterr()
         assert "Product A" in captured.out
         assert "Product B" in captured.out
-        assert "Total: $26.00" in captured.out
+        assert "Total: €26.00" in captured.out
 
 
 class TestProcessSale:
