@@ -45,8 +45,8 @@ def generate_low_stock_report(threshold=20):
     # format each product row
     for product in low_stock_products:
         product_id = product["id"]
-        name = product["name"][:24]  # truncate if too long
-        brand = product["brand"][:14] if product["brand"] else "N/A"
+        name = product["name"][:25]  # truncate if too long
+        brand = product["brand"][:15] if product["brand"] else "N/A"
         quantity = product["quantity_on_hand"]
         price = product["price"]
         
