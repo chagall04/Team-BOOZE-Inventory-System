@@ -250,6 +250,82 @@ def get_low_stock_report(threshold):
         conn.close()
 
 
+# transaction detail functions (scrum-60)
+def get_transaction_by_id(transaction_id):
+    """
+    scrum-61: retrieve transaction details by ID
+    
+    args:
+        transaction_id: unique transaction ID
+    
+    returns:
+        dict with 'id', 'timestamp', 'total_amount' or None if not found
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT id, timestamp, total_amount FROM transactions WHERE id = ?",
+            (transaction_id,)
+        )
+        result = cursor.fetchone()
+        
+        if result:
+            return {
+                "id": result["id"],
+                "timestamp": result["timestamp"],
+                "total_amount": result["total_amount"]
+            }
+        return None
+    except sqlite3.Error:
+        return None
+    finally:
+        conn.close()
+
+
+def get_items_for_transaction(transaction_id):
+    """
+    scrum-62: retrieve all items for a transaction with product details
+    
+    joins transaction_items with booze table to get product name, quantity,
+    and price-at-sale for all items linked to the transaction
+    
+    args:
+        transaction_id: unique transaction ID
+    
+    returns:
+        list of dicts with 'name', 'quantity', 'price_at_sale'
+        returns empty list if no items found or on error
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT b.name, ti.quantity, ti.price_at_sale
+               FROM transaction_items ti
+               JOIN booze b ON ti.product_id = b.id
+               WHERE ti.transaction_id = ?
+               ORDER BY ti.id""",
+            (transaction_id,)
+        )
+        results = cursor.fetchall()
+        
+        # convert Row objects to dictionaries
+        items = []
+        for row in results:
+            items.append({
+                "name": row["name"],
+                "quantity": row["quantity"],
+                "price_at_sale": row["price_at_sale"]
+            })
+        
+        return items
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()
+
+
 def process_sale_transaction(cart_items, total_amount):
     """
     scrum-12: atomic sale transaction with rollback support

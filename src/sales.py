@@ -6,7 +6,9 @@
 
 from src.database_manager import (
     get_product_details,
-    process_sale_transaction
+    process_sale_transaction,
+    get_transaction_by_id,
+    get_items_for_transaction
 )
 
 
@@ -208,6 +210,69 @@ def record_sale():
 
         else:
             print("Invalid choice. Please try again.")
+
+
+def view_transaction_details():
+    """
+    scrum-63: view detailed receipt for a specific transaction ID
+    
+    implementation:
+    - prompts user for transaction ID
+    - calls get_transaction_by_id() to retrieve main transaction details
+    - calls get_items_for_transaction() to retrieve all items
+    - prints formatted receipt with EUR currency
+    
+    returns:
+        bool: True if transaction was found and displayed, False otherwise
+    """
+    print("\n=== View Transaction Details ===")
+    
+    transaction_id_str = input("Enter Transaction ID: ").strip()
+    
+    # validate transaction ID input
+    try:
+        transaction_id = int(transaction_id_str)
+        if transaction_id <= 0:
+            print("Error: Transaction ID must be a positive number")
+            return False
+    except ValueError:
+        print("Error: Transaction ID must be a valid number")
+        return False
+    
+    # retrieve transaction details
+    transaction = get_transaction_by_id(transaction_id)
+    
+    if transaction is None:
+        print(f"Error: Transaction with ID {transaction_id} not found")
+        return False
+    
+    # retrieve transaction items
+    items = get_items_for_transaction(transaction_id)
+    
+    if not items:
+        print(f"Error: No items found for transaction {transaction_id}")
+        return False
+    
+    # print formatted receipt
+    print("\n" + "=" * 50)
+    print("TRANSACTION RECEIPT")
+    print("=" * 50)
+    print(f"Transaction ID: {transaction['id']}")
+    print(f"Date/Time: {transaction['timestamp']}")
+    print("-" * 50)
+    print(f"{'Item':<30} {'Qty':<5} {'Price':<10} {'Total':<10}")
+    print("-" * 50)
+    
+    for item in items:
+        item_total = item['quantity'] * item['price_at_sale']
+        print(f"{item['name']:<30} {item['quantity']:<5} "
+              f"€{item['price_at_sale']:<9.2f} €{item_total:<9.2f}")
+    
+    print("-" * 50)
+    print(f"{'TOTAL:':<46} €{transaction['total_amount']:.2f}")
+    print("=" * 50)
+    
+    return True
 
 
 # --- Backlog (Not in Sprint 1) ---

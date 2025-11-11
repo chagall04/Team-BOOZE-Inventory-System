@@ -6,7 +6,7 @@ This module handles the user interface and menu navigation.
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
-from .sales import record_sale
+from .sales import record_sale, view_transaction_details
 from .inventory_tracking import receive_new_stock, view_current_stock
 from .reporting import generate_low_stock_report
 
@@ -69,6 +69,7 @@ def show_manager_menu():
         print("\n[1] Add/Update Product (Product Management)")
         print("[2] View Inventory Report (Reporting & Analytics)")
         print("[3] View Sales History (Sales Management)")
+        print("[4] View Transaction Details (Sales Management)")
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -88,6 +89,9 @@ def show_manager_menu():
         elif choice == '3':
             # scrum-15: view sales history (future sprint)
             print("Sales history function not yet implemented.")
+        elif choice == '4':
+            # scrum-64: view transaction details (SCRUM-60)
+            view_transaction_details()
         elif choice == '0':
             print("Logging out...")
             break
@@ -101,6 +105,7 @@ def show_clerk_menu():
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
         print("[3] View Product Stock (Inventory Tracking)")
+        print("[4] View Transaction Details (Sales Management)")
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -110,6 +115,9 @@ def show_clerk_menu():
             receive_new_stock()
         elif choice == '3':
             view_current_stock()
+        elif choice == '4':
+            # scrum-64: view transaction details (SCRUM-60)
+            view_transaction_details()
         elif choice == '0':
             print("Logging out...")
             break
