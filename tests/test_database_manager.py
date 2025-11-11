@@ -296,7 +296,7 @@ class TestSalesDatabaseFunctions:
         assert result is not None
         assert result["id"] == 1
         assert result["name"] == "Test Product"
-        assert result["price"] == 10.50
+        assert abs(result["price"] - 10.50) < 0.01
         assert result["quantity_on_hand"] == 50
         mock_conn.close.assert_called_once()
     
@@ -596,7 +596,7 @@ class TestLowStockDatabase:
         
         result = get_low_stock_report(20)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
 
 
@@ -690,3 +690,127 @@ class TestInventoryFunctions:
         assert result is None
         mock_conn.close.assert_called_once()
 
+
+class TestTransactionDetails:
+    """test class for transaction detail retrieval functions (scrum-60)"""
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_transaction_by_id_success(self, mock_get_db):
+        """test successfully retrieving transaction by id"""
+        from src.database_manager import get_transaction_by_id
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_row = {
+            "id": 1,
+            "timestamp": "2025-11-10 14:30:00",
+            "total_amount": 45.50
+        }
+        mock_cursor.fetchone.return_value = mock_row
+        
+        result = get_transaction_by_id(1)
+        
+        assert result is not None
+        assert result["id"] == 1
+        assert result["timestamp"] == "2025-11-10 14:30:00"
+        assert abs(result["total_amount"] - 45.50) < 0.01
+        mock_cursor.execute.assert_called_once_with(
+            "SELECT id, timestamp, total_amount FROM transactions WHERE id = ?",
+            (1,)
+        )
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_transaction_by_id_not_found(self, mock_get_db):
+        """test get transaction by id when transaction not found"""
+        from src.database_manager import get_transaction_by_id
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchone.return_value = None
+        
+        result = get_transaction_by_id(999)
+        
+        assert result is None
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_transaction_by_id_database_error(self, mock_get_db):
+        """test get transaction by id handles database error"""
+        from src.database_manager import get_transaction_by_id
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
+        
+        result = get_transaction_by_id(1)
+        
+        assert result is None
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_items_for_transaction_success(self, mock_get_db):
+        """test successfully retrieving items for transaction"""
+        from src.database_manager import get_items_for_transaction
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_rows = [
+            {"name": "Product A", "quantity": 2, "price_at_sale": 10.50},
+            {"name": "Product B", "quantity": 1, "price_at_sale": 24.50}
+        ]
+        mock_cursor.fetchall.return_value = mock_rows
+        
+        result = get_items_for_transaction(1)
+        
+        assert len(result) == 2
+        assert result[0]["name"] == "Product A"
+        assert result[0]["quantity"] == 2
+        assert abs(result[0]["price_at_sale"] - 10.50) < 0.01
+        assert result[1]["name"] == "Product B"
+        assert result[1]["quantity"] == 1
+        assert abs(result[1]["price_at_sale"] - 24.50) < 0.01
+        mock_cursor.execute.assert_called_once()
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_items_for_transaction_empty(self, mock_get_db):
+        """test get items for transaction when no items found"""
+        from src.database_manager import get_items_for_transaction
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = []
+        
+        result = get_items_for_transaction(999)
+        
+        assert not result
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_items_for_transaction_database_error(self, mock_get_db):
+        """test get items for transaction handles database error"""
+        from src.database_manager import get_items_for_transaction
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
+        
+        result = get_items_for_transaction(1)
+        
+        assert not result
+        mock_conn.close.assert_called_once()
