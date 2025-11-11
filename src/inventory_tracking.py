@@ -84,5 +84,61 @@ def view_current_stock():
     print(f"Current Stock: {stock_data['quantity']} units")
     return True
 
+def log_product_loss():
+    """
+    Handles the logic for SCRUM-10: "As a Store Clerk, I want to log a product
+    loss so that the inventory is adjusted correctly."
+
+    Returns:
+        bool: True if loss was successfully logged, False otherwise
+    """
+    print("\n--- Log Product Loss ---")
+
+    # SCRUM-48: CLI interface for logging product loss
+    try:
+        product_id = int(input("Enter Product ID: "))
+    except ValueError:
+        print("Error: Product ID must be a number.")
+        return False
+
+    # SCRUM-49: Reuse get_stock_by_id() to fetch current stock
+    current_stock = get_stock_by_id(product_id)
+
+    if current_stock is None:
+        print(f"Error: Product with ID {product_id} not found.")
+        return False
+
+    # Get quantity lost from user
+    try:
+        quantity_lost = int(input("Enter quantity lost: "))
+        if quantity_lost < 0:
+            raise ValueError("Quantity lost cannot be negative")
+        if quantity_lost == 0:
+            raise ValueError("Quantity lost must be greater than zero")
+    except ValueError as e:
+        print(f"Error: {str(e)}")
+        return False
+
+    # Verify we have enough stock to lose
+    if quantity_lost > current_stock['quantity']:
+        print(f"Error: Cannot log loss of {quantity_lost} units. Current stock is only {current_stock['quantity']} units.")
+        return False
+
+    # Calculate new stock level
+    new_stock_level = current_stock['quantity'] - quantity_lost
+
+    # SCRUM-50: Reuse adjust_stock() function, passing in the new quantity
+    update_result = adjust_stock(product_id, new_stock_level)
+    if not update_result:
+        print("\nError: Failed to update stock level in database.")
+        return False
+
+    # If we get here, update was successful
+    print(f"\nSuccess! Logged loss for {current_stock['name']}:")
+    print(f"Previous stock level: {current_stock['quantity']}")
+    print(f"Lost: {quantity_lost}")
+    print(f"New stock level: {new_stock_level}")
+    return True
+
 # --- Backlog (Not in Sprint 1) ---
-# SCRUM-10 (Log Product Loss) will be implemented here in a future sprint.
+# SCRUM-10 (Log Product Loss) has been implemented above.

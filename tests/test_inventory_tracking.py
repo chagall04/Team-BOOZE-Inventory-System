@@ -176,3 +176,118 @@ def test_view_current_stock_product_not_found(mock_get_stock, mock_input, capsys
 
     captured = capsys.readouterr()
     assert "Error: Product with ID 999 not found" in captured.out
+
+    @patch('builtins.input', side_effect=['1', '20'])
+    def test_log_product_loss_success(mock_input):
+        """SCRUM-51 & SCRUM-48: Test successful product loss logging"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is True
+    
+        # Verify final stock level decreased correctly
+        updated = get_stock_by_id(1)
+        assert updated is not None
+        assert updated['quantity'] == 30  # 50 - 20
+
+    @patch('builtins.input', side_effect=['abc', '20'])
+    def test_log_product_loss_invalid_id(mock_input):
+        """SCRUM-48: Test handling invalid product ID input"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is False
+
+    @patch('builtins.input', side_effect=['1', '-5'])
+    def test_log_product_loss_negative_quantity(mock_input):
+        """SCRUM-48: Test handling negative quantity input"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is False
+    
+        # Verify stock wasn't changed
+        current = get_stock_by_id(1)
+        assert current is not None
+        assert current['quantity'] == 50
+
+    @patch('builtins.input', side_effect=['1', '0'])
+    def test_log_product_loss_zero_quantity(mock_input):
+        """SCRUM-48: Test handling zero quantity input"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is False
+    
+        # Verify stock wasn't changed
+        current = get_stock_by_id(1)
+        assert current is not None
+        assert current['quantity'] == 50
+
+    @patch('builtins.input', side_effect=['999', '10'])
+    @patch('src.database_manager.get_stock_by_id')
+    def test_log_product_loss_nonexistent_product(mock_get_stock, mock_input):
+        """SCRUM-48: Test handling nonexistent product"""
+        from src.inventory_tracking import log_product_loss
+    
+        # Force get_stock_by_id to return None to simulate product not found
+        mock_get_stock.return_value = None
+    
+        result = log_product_loss()
+        assert result is False
+
+    @patch('builtins.input', side_effect=['1', '100'])
+    def test_log_product_loss_quantity_exceeds_stock(mock_input):
+        """SCRUM-48 & SCRUM-50: Test handling loss quantity greater than current stock"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is False
+    
+        # Verify stock wasn't changed
+        current = get_stock_by_id(1)
+        assert current is not None
+        assert current['quantity'] == 50
+
+    @patch('builtins.input', side_effect=['1', '20'])
+    @patch('src.inventory_tracking.adjust_stock')
+    @patch('src.database_manager.get_stock_by_id')
+    def test_log_product_loss_update_failure(mock_get_stock, mock_adjust_stock, mock_input):
+        """SCRUM-48 & SCRUM-50: Test handling database update failure"""
+        from src.inventory_tracking import log_product_loss
+    
+        # Mock get_stock_by_id to return test data
+        mock_get_stock.return_value = {'id': 1, 'name': 'Test Product', 'quantity': 50}
+    
+        # Set up adjust_stock to return False
+        mock_adjust_stock.return_value = False
+    
+        result = log_product_loss()
+        assert result is False, "Function should return False when adjust_stock fails"
+        mock_adjust_stock.assert_called_once_with(1, 30)  # 50 - 20
+
+    @patch('builtins.input', side_effect=['1', '15'])
+    def test_log_product_loss_partial_deduction(mock_input):
+        """SCRUM-51 & SCRUM-50: Test partial stock deduction"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is True
+    
+        # Verify stock decreased by exactly 15 units
+        updated = get_stock_by_id(1)
+        assert updated is not None
+        assert updated['quantity'] == 35  # 50 - 15
+
+    @patch('builtins.input', side_effect=['1', '50'])
+    def test_log_product_loss_entire_stock(mock_input):
+        """SCRUM-51: Test logging loss of entire stock"""
+        from src.inventory_tracking import log_product_loss
+    
+        result = log_product_loss()
+        assert result is True
+    
+        # Verify stock is now zero
+        updated = get_stock_by_id(1)
+        assert updated is not None
+        assert updated['quantity'] == 0
