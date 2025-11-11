@@ -596,7 +596,7 @@ class TestLowStockDatabase:
         
         result = get_low_stock_report(20)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
 
 
@@ -796,7 +796,7 @@ class TestTransactionDetails:
         
         result = get_items_for_transaction(999)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
     
     @patch('src.database_manager.get_db_connection')
@@ -812,6 +812,5 @@ class TestTransactionDetails:
         
         result = get_items_for_transaction(1)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
-
