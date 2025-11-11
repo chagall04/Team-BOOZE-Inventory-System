@@ -265,14 +265,14 @@ def get_transaction_by_id(transaction_id):
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "SELECT id, timestamp, total_amount FROM transactions WHERE id = ?",
+            "SELECT transaction_id, timestamp, total_amount FROM transactions WHERE transaction_id = ?",
             (transaction_id,)
         )
         result = cursor.fetchone()
         
         if result:
             return {
-                "id": result["id"],
+                "id": result["transaction_id"],
                 "timestamp": result["timestamp"],
                 "total_amount": result["total_amount"]
             }
@@ -305,7 +305,7 @@ def get_items_for_transaction(transaction_id):
                FROM transaction_items ti
                JOIN booze b ON ti.product_id = b.id
                WHERE ti.transaction_id = ?
-               ORDER BY ti.id""",
+               ORDER BY ti.item_id""",
             (transaction_id,)
         )
         results = cursor.fetchall()

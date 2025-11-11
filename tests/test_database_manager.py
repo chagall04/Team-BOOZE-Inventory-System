@@ -705,7 +705,7 @@ class TestTransactionDetails:
         mock_conn.cursor.return_value = mock_cursor
         
         mock_row = {
-            "id": 1,
+            "transaction_id": 1,
             "timestamp": "2025-11-10 14:30:00",
             "total_amount": 45.50
         }
@@ -718,7 +718,7 @@ class TestTransactionDetails:
         assert result["timestamp"] == "2025-11-10 14:30:00"
         assert abs(result["total_amount"] - 45.50) < 0.01
         mock_cursor.execute.assert_called_once_with(
-            "SELECT id, timestamp, total_amount FROM transactions WHERE id = ?",
+            "SELECT transaction_id, timestamp, total_amount FROM transactions WHERE transaction_id = ?",
             (1,)
         )
         mock_conn.close.assert_called_once()
