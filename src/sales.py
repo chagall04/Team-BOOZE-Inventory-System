@@ -11,6 +11,9 @@ from src.database_manager import (
     get_items_for_transaction
 )
 
+# Constants
+SALE_CANCELLED_MSG = "Sale cancelled."
+
 
 def validate_product_input(product_id_str):
     """
@@ -113,6 +116,68 @@ def process_sale(cart):
     return False, f"Sale failed: {result}"
 
 
+def handle_add_item_to_cart(cart):
+    """Handle adding an item to the cart"""
+    product_id_str = input("Enter Product ID: ").strip()
+
+    # Validate product ID
+    is_valid, product_id, error = validate_product_input(product_id_str)
+    if not is_valid:
+        print(f"Error: {error}")
+        return
+
+    quantity_str = input("Enter quantity: ").strip()
+
+    # Validate quantity
+    is_valid, quantity, error = validate_quantity_input(quantity_str)
+    if not is_valid:
+        print(f"Error: {error}")
+        return
+
+    # Pre-sale check for stock availability
+    is_available, product, error = check_stock_availability(product_id, quantity, cart)
+    if not is_available:
+        print(f"Error: {error}")
+        return
+
+    # Type assertion: product is not None when is_available is True
+    assert product is not None
+
+    # Add to cart
+    cart.append({
+        'product_id': product['id'],
+        'name': product['name'],
+        'price': product['price'],
+        'quantity': quantity,
+        'current_stock': product['quantity_on_hand']
+    })
+
+    print(f"Added {quantity} x {product['name']} to cart.")
+
+
+def handle_complete_sale(cart):
+    """Handle completing the sale transaction"""
+    if not cart:
+        print("Error: Cart is empty. Please add items before completing sale.")
+        return None
+
+    # Display final summary
+    print("\n=== Sale Summary ===")
+    display_cart(cart)
+
+    confirm = input("\nConfirm sale? (y/n): ").strip().lower()
+    if confirm == 'y':
+        # Process the sale
+        success, message = process_sale(cart)
+        if success:
+            print(f"\n{message}")
+            return True
+        print(f"\nError: {message}")
+        return False
+    print(SALE_CANCELLED_MSG)
+    return False
+
+
 
 def record_sale():
     """
@@ -141,73 +206,16 @@ def record_sale():
         choice = input("Enter choice: ").strip()
 
         if choice == '1':
-            # Add item to cart
-            product_id_str = input("Enter Product ID: ").strip()
-
-            # Validate product ID
-            is_valid, product_id, error = validate_product_input(product_id_str)
-            if not is_valid:
-                print(f"Error: {error}")
-                continue
-
-            quantity_str = input("Enter quantity: ").strip()
-
-            # Validate quantity
-            is_valid, quantity, error = validate_quantity_input(quantity_str)
-            if not is_valid:
-                print(f"Error: {error}")
-                continue
-
-            # SCRUM-38: Pre-sale check for stock availability
-            is_available, product, error = check_stock_availability(product_id, quantity, cart)
-            if not is_available:
-                print(f"Error: {error}")
-                continue
-
-            # Type assertion: product is not None when is_available is True
-            assert product is not None
-
-            # Add to cart
-            cart.append({
-                'product_id': product['id'],
-                'name': product['name'],
-                'price': product['price'],
-                'quantity': quantity,
-                'current_stock': product['quantity_on_hand']
-            })
-
-            print(f"Added {quantity} x {product['name']} to cart.")
-
+            handle_add_item_to_cart(cart)
         elif choice == '2':
-            # SCRUM-40: View cart
             display_cart(cart)
-
         elif choice == '3':
-            # Complete sale
-            if not cart:
-                print("Error: Cart is empty. Please add items before completing sale.")
-                continue
-
-            # SCRUM-40: Display final summary
-            print("\n=== Sale Summary ===")
-            display_cart(cart)
-
-            confirm = input("\nConfirm sale? (y/n): ").strip().lower()
-            if confirm == 'y':
-                # SCRUM-37: Process the sale
-                success, message = process_sale(cart)
-                if success:
-                    print(f"\n{message}")
-                    return True
-                print(f"\nError: {message}")
-                return False
-            print("Sale cancelled.")
-            return False
-
+            result = handle_complete_sale(cart)
+            if result is not None:
+                return result
         elif choice == '0':
-            print("Sale cancelled.")
+            print(SALE_CANCELLED_MSG)
             return False
-
         else:
             print("Invalid choice. Please try again.")
 

@@ -7,33 +7,44 @@ and viewing products in the 'booze' table."""
 
 from src.database_manager import insert_product
 
+# Constants
+INITIAL_STOCK_FIELD = "Initial stock"
+
 def validate_required_field(field_value, field_name):
     """Validate that a required field is not empty"""
     if not field_value or len(field_value.strip()) == 0:
         return [f"{field_name} is required"]
     return []
 
+def get_min_value_error(field_name, min_value, max_value):
+    """Get appropriate error message for minimum value validation"""
+    if field_name == "Price":
+        return f"{field_name} must be non-negative"
+    if field_name == INITIAL_STOCK_FIELD:
+        return f"{field_name} quantity must be non-negative"
+    if field_name == "Volume" and min_value == 1:
+        return f"{field_name} must be greater than 0"
+    return f"{field_name} must be between 0 and {max_value}"
+
+def get_value_error_message(field_name, convert_func):
+    """Get appropriate error message for value conversion errors"""
+    if convert_func == int and field_name == INITIAL_STOCK_FIELD:
+        return f"{field_name} must be a valid whole number"
+    return f"{field_name} must be a valid number"
+
 def validate_numeric_value(value, field_name, convert_func, min_value=None, max_value=None):
     """Validate numeric fields with optional range checks"""
     try:
         num_value = convert_func(value)
         if min_value is not None and num_value < min_value:
-            if field_name == "Price":
-                return [f"{field_name} must be non-negative"], None
-            if field_name == "Initial stock":
-                return [f"{field_name} quantity must be non-negative"], None
-            if field_name == "Volume" and min_value == 1:
-                return [f"{field_name} must be greater than 0"], None
-            return [f"{field_name} must be between 0 and {max_value}"], None
+            error_msg = get_min_value_error(field_name, min_value, max_value)
+            return [error_msg], None
         if max_value is not None and num_value > max_value:
             return [f"{field_name} must be between 0 and {max_value}"], None
         return [], num_value
     except ValueError:
-        if convert_func == int:
-            if field_name == "Initial stock":
-                return [f"{field_name} must be a valid whole number"], None
-            return [f"{field_name} must be a valid number"], None
-        return [f"{field_name} must be a valid number"], None
+        error_msg = get_value_error_message(field_name, convert_func)
+        return [error_msg], None
 
 def validate_product_data(name, brand, type_, price, quantity, abv=None, volume_ml=None):
     """Client-side validation for product data (SCRUM-25)"""
@@ -51,7 +62,7 @@ def validate_product_data(name, brand, type_, price, quantity, abv=None, volume_
 
     # Quantity validation
     quantity_errors, _ = validate_numeric_value(
-        quantity, "Initial stock", int, min_value=0)
+        quantity, INITIAL_STOCK_FIELD, int, min_value=0)
     errors.extend(quantity_errors)
 
     # Optional field validation
