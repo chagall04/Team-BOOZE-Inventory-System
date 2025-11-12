@@ -110,13 +110,16 @@ def log_product_loss():
 
     # Get quantity lost from user
     try:
-        quantity_lost = int(input("Enter quantity lost: "))
-        if quantity_lost < 0:
-            raise ValueError("Quantity lost cannot be negative")
-        if quantity_lost == 0:
-            raise ValueError("Quantity lost must be greater than zero")
-    except ValueError as e:
-        print(f"Error: {str(e)}")
+        quantity_lost_input = input("Enter quantity lost: ")
+        quantity_lost = int(quantity_lost_input)
+    except ValueError:
+        print("Error: Quantity lost must be a number.")
+        return False
+    if quantity_lost < 0:
+        print("Error: Quantity lost cannot be negative")
+        return False
+    if quantity_lost == 0:
+        print("Error: Quantity lost must be greater than zero")
         return False
 
     # Verify we have enough stock to lose
