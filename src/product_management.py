@@ -133,7 +133,7 @@ def add_new_product():
 
 
 
-# ...existing code...
+
 def lookup_product_by_id(product_id):
     """
     Look up a product by its ID in the database.
