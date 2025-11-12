@@ -251,7 +251,7 @@ def test_view_current_stock_product_not_found(mock_get_stock, mock_input, capsys
 
     @patch('builtins.input', side_effect=['1', '20'])
     @patch('src.inventory_tracking.adjust_stock')
-    @patch('src.database_manager.get_stock_by_id')
+    @patch('src.inventory_tracking.get_stock_by_id')
     def test_log_product_loss_update_failure(mock_get_stock, mock_adjust_stock, mock_input):
         """SCRUM-48 & SCRUM-50: Test handling database update failure"""
         from src.inventory_tracking import log_product_loss
