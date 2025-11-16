@@ -1,4 +1,4 @@
-// Jenkinsfile
+// jenkinsfile
 pipeline {
     agent any // Run on any Jenkins node
 
@@ -12,64 +12,55 @@ pipeline {
         // MUST MATCH JDK name from Jenkins > Tools
         jdk 'jdk-21'     
         // MUST MATCH NodeJS name from Jenkins > Tools
-        nodejs 'node-22'
+        nodejs 'node-22' 
     }
 
     stages {
-        // THIS STAGE IS NOW SIMPLIFIED
         stage('1. Checkout Code') {
             steps {
-                // The initial 'Declarative: Checkout SCM' step before 'stages'
-                // already checked out the code. We don't need another 'git' command here.
                 echo 'Code checkout completed by Jenkins SCM step.'
             }
         }
         
         stage('2. Install Dependencies') {
             steps {
-                // Installs pytest, pylint, bcrypt etc. using pip
-                bat 'pip install -r requirements.txt'
+                // --- THIS LINE IS CHANGED ---
+                // Use 'python -m pip' instead of just 'pip'
+                bat 'python -m pip install -r requirements.txt'
             }
         }
         
         stage('3. Run Linter (Pylint)') {
             steps {
-                // Creates pylint-report.txt for SonarCloud
-                // '|| exit 0' prevents build failure on linting issues
-                bat 'pylint src/ > pylint-report.txt || exit 0'
+                // --- THIS LINE IS CHANGED ---
+                // Use 'python -m pylint' instead of just 'pylint'
+                bat 'python -m pylint src/ > pylint-report.txt || exit 0'
             }
         }
         
         stage('4. Run Unit Tests & Coverage') {
             steps {
-                // Creates coverage.xml for SonarCloud
-                bat 'pytest --cov=src --cov-report=xml'
+                // --- THIS LINE IS CHANGED ---
+                // Use 'python -m pytest' instead of just 'pytest'
+                bat 'python -m pytest --cov=src --cov-report=xml'
             }
         }
         
         stage('5. SonarCloud Analysis') {
             steps {
-                // We no longer need withSonarQubeEnv here,
-                // we will use the credentials binding directly.
-                script {
-                    // Get the path to the SonarScanner tool installation
-                    def scannerHome = tool 'SonarScanner-Latest'
-
-                    // This 'withCredentials' block securely binds your token
-                    // to a variable named SONAR_LOGIN_TOKEN
-                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_LOGIN_TOKEN')]) {
-
-                        // Run scanner using 'bat' for Windows
+                withSonarQubeEnv(SONAR_SERVER) {
+                    script {
+                        def scannerHome = tool 'SonarScanner-Latest' 
                         bat(script: """
                             "${scannerHome}/bin/sonar-scanner.bat" ^
                               -Dsonar.projectKey=chagall04_Team-BOOZE-Inventory-System ^
                               -Dsonar.organization=chagall04 ^
                               -Dsonar.sources=src ^
                               -Dsonar.host.url=https://sonarcloud.io ^
-                              -Dsonar.login=%SONAR_LOGIN_TOKEN% ^
+                              -Dsonar.login=%SONAR_TOKEN% ^
                               -Dsonar.python.coverage.reportPaths=coverage.xml ^
                               -Dsonar.python.pylint.reportPaths=pylint-report.txt
-                        """, returnStdout: true)
+                        """, returnStdout: true) 
                     }
                 }
             }
@@ -77,9 +68,7 @@ pipeline {
     }
     
     post {
-        // Runs after all stages
         always {
-            // Clean up files from the Jenkins workspace
             cleanWs()
             echo 'Pipeline finished.'
         }
