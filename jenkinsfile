@@ -21,32 +21,40 @@ pipeline {
                 echo 'Code checkout completed by Jenkins SCM step.'
             }
         }
-        
-        stage('2. Install Dependencies') {
+
+        stage('2. Create Virtual Environment') {
             steps {
                 // --- THIS LINE IS CHANGED ---
-                // Use 'python -m pip' instead of just 'pip'
-                bat 'python -m pip install -r requirements.txt'
+                // Using the full, absolute path to your base Python
+                bat 'c:\\programdata\\anaconda3\\python.exe -m venv .venv'
             }
         }
         
-        stage('3. Run Linter (Pylint)') {
+        stage('3. Install Dependencies') {
             steps {
                 // --- THIS LINE IS CHANGED ---
-                // Use 'python -m pylint' instead of just 'pylint'
-                bat 'python -m pylint src/ > pylint-report.txt || exit 0'
+                // Using the python.exe from the .venv we just created
+                bat '.\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt'
             }
         }
         
-        stage('4. Run Unit Tests & Coverage') {
+        stage('4. Run Linter (Pylint)') {
             steps {
                 // --- THIS LINE IS CHANGED ---
-                // Use 'python -m pytest' instead of just 'pytest'
-                bat 'python -m pytest --cov=src --cov-report=xml'
+                // Using the python.exe from the .venv
+                bat '.\\.venv\\Scripts\\python.exe -m pylint src/ > pylint-report.txt || exit 0'
             }
         }
         
-        stage('5. SonarCloud Analysis') {
+        stage('5. Run Unit Tests & Coverage') {
+            steps {
+                // --- THIS LINE IS CHANGED ---
+                // Using the python.exe from the .venv
+                bat '.\\.venv\\Scripts\\python.exe -m pytest --cov=src --cov-report=xml'
+            }
+        }
+        
+        stage('6. SonarCloud Analysis') {
             steps {
                 withSonarQubeEnv(SONAR_SERVER) {
                     script {
