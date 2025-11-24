@@ -274,7 +274,7 @@ def test_add_new_product_db_failure():
 
 # SCRUM-6 Update Product Tests
 class TestLookupProductById:
-    """Test class for lookup_product_by_id function"""
+    """test class for lookup_product_by_id function"""
     
     @patch('sqlite3.connect')
     def test_lookup_product_by_id_success(self, mock_connect):
