@@ -1,6 +1,7 @@
 """Tests for product management functionality including validation and addition."""
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+import sqlite3
 import pytest
 from src.product_management import add_new_product, validate_product_data
 
@@ -63,7 +64,7 @@ def test_add_new_product_success(optional_fields):
                 inputs.extend(["", "", "", ""])
                 
             mock_input.side_effect = inputs
-            mock_insert.return_value = (True, 1)  # Success, ID = 1
+            mock_insert.return_value = (True, 1)
             
             # Execute
             result = add_new_product()
@@ -269,3 +270,644 @@ def test_add_new_product_db_failure():
         result = add_new_product()
         assert result is False
         mock_print.assert_any_call("\nError: Failed to add product - Database error")
+
+
+# SCRUM-6 Update Product Tests
+class TestLookupProductById:
+    """test class for lookup_product_by_id function"""
+    
+    @patch('src.product_management.get_db_connection')
+    def test_lookup_product_by_id_success(self, mock_get_db):
+        """Test successfully looking up a product by ID"""
+        from src.product_management import lookup_product_by_id
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_row = (1, 'Test Beer', 'Test Brand', 'Beer', 5.99, 50, 4.5, 500, 'Ireland', 'Description')
+        mock_cursor.fetchone.return_value = mock_row
+        
+        success, product = lookup_product_by_id(1)
+        
+        assert success is True
+        assert product['id'] == 1
+        assert product['name'] == 'Test Beer'
+        assert product['brand'] == 'Test Brand'
+        assert product['type'] == 'Beer'
+        assert product['price'] == pytest.approx(5.99, rel=1e-6)
+        assert product['quantity'] == 50
+        assert product['abv'] == pytest.approx(4.5, rel=1e-6)
+        assert product['volume_ml'] == 500
+        assert product['origin_country'] == 'Ireland'
+        assert product['description'] == 'Description'
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.product_management.get_db_connection')
+    def test_lookup_product_by_id_not_found(self, mock_get_db):
+        """Test looking up non-existent product"""
+        from src.product_management import lookup_product_by_id
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchone.return_value = None
+        
+        success, message = lookup_product_by_id(999)
+        
+        assert success is False
+        assert "No product found with ID: 999" in message
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.product_management.get_db_connection')
+    def test_lookup_product_by_id_database_error(self, mock_get_db):
+        """Test database error during lookup"""
+        from src.product_management import lookup_product_by_id
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("Connection failed")
+        
+        success, message = lookup_product_by_id(1)
+        
+        assert success is False
+        assert "Database error" in message
+        mock_conn.close.assert_called_once()
+
+
+class TestUpdateProductCli:
+    """test class for update_product_cli function"""
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('src.database_manager.update_product')
+    @patch('builtins.input')
+    def test_update_product_cli_success_all_fields(self, mock_input, mock_update, mock_lookup):
+        """Test successful update of all product fields"""
+        from src.product_management import update_product_cli
+        
+        # Mock product lookup
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Old Name',
+            'brand': 'Old Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': 4.5,
+            'volume_ml': 500,
+            'origin_country': 'Ireland',
+            'description': 'Old description'
+        })
+        
+        # Mock user inputs
+        mock_input.side_effect = [
+            '1',  # product id
+            'New Name',  # name
+            'New Brand',  # brand
+            'Lager',  # type
+            '6.99',  # price
+            '100',  # quantity
+            '5.0',  # abv
+            '330',  # volume_ml
+            'Germany',  # origin_country
+            'New description'  # description
+        ]
+        
+        # Mock database update
+        mock_update.return_value = (True, "Product updated successfully")
+        
+        result = update_product_cli()
+        
+        assert result is True
+        mock_update.assert_called_once()
+        
+        # Verify update data
+        call_args = mock_update.call_args[0]
+        assert call_args[0] == 1  # product_id
+        update_data = call_args[1]
+        assert update_data['name'] == 'New Name'
+        assert update_data['brand'] == 'New Brand'
+        assert update_data['type'] == 'Lager'
+        assert update_data['price'] == pytest.approx(6.99, rel=1e-6)
+        assert update_data['quantity_on_hand'] == 100
+        assert update_data['abv'] == pytest.approx(5.0, rel=1e-6)
+        assert update_data['volume_ml'] == 330
+        assert update_data['origin_country'] == 'Germany'
+        assert update_data['description'] == 'New description'
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('src.database_manager.update_product')
+    @patch('builtins.input')
+    def test_update_product_cli_partial_update(self, mock_input, mock_update, mock_lookup):
+        """Test updating only some fields (keeping others)"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': 4.5,
+            'volume_ml': 500,
+            'origin_country': 'Ireland',
+            'description': 'Description'
+        })
+        
+        # User presses Enter to keep current values for most fields
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name (keep current)
+            '',  # brand (keep current)
+            '',  # type (keep current)
+            '7.99',  # price (update)
+            '',  # quantity (keep current)
+            '',  # abv (keep current)
+            '',  # volume_ml (keep current)
+            '',  # origin_country (keep current)
+            'Updated description'  # description (update)
+        ]
+        
+        mock_update.return_value = (True, "Product updated successfully")
+        
+        result = update_product_cli()
+        
+        assert result is True
+        mock_update.assert_called_once()
+        
+        # Verify only updated fields are in update_data
+        call_args = mock_update.call_args[0]
+        update_data = call_args[1]
+        assert update_data['price'] == pytest.approx(7.99, rel=1e-6)
+        assert update_data['description'] == 'Updated description'
+        # Other fields should not be in update_data
+        assert 'name' not in update_data
+        assert 'brand' not in update_data
+    
+    @patch('builtins.input')
+    def test_update_product_cli_invalid_product_id(self, mock_input):
+        """Test handling of invalid product ID"""
+        from src.product_management import update_product_cli
+        
+        mock_input.return_value = 'abc'  # Invalid ID
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_product_not_found(self, mock_input, mock_lookup):
+        """Test handling of non-existent product"""
+        from src.product_management import update_product_cli
+        
+        mock_input.return_value = '999'
+        mock_lookup.return_value = (False, "No product found with ID: 999")
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_error_negative_price(self, mock_input, mock_lookup):
+        """Test validation error for negative price"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': 4.5,
+            'volume_ml': 500,
+            'origin_country': 'Ireland',
+            'description': 'Description'
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '-5.99',  # invalid price
+            '',  # quantity
+            '',  # abv
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_error_invalid_abv(self, mock_input, mock_lookup):
+        """Test validation error for ABV over 100"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': 4.5,
+            'volume_ml': 500,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '',  # price
+            '',  # quantity
+            '101',  # invalid ABV
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_no_changes(self, mock_input, mock_lookup):
+        """Test when user doesn't provide any changes"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        # User presses Enter for all fields
+        mock_input.side_effect = ['1'] + [''] * 9
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('src.database_manager.update_product')
+    @patch('builtins.input')
+    def test_update_product_cli_database_error(self, mock_input, mock_update, mock_lookup):
+        """Test handling of database error during update"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '6.99',  # price
+            '',  # quantity
+            '',  # abv
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        mock_update.return_value = (False, "Database error")
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('src.database_manager.update_product')
+    @patch('builtins.input')
+    def test_update_product_cli_clear_optional_fields(self, mock_input, mock_update, mock_lookup):
+        """Test partial update - blank means keep current value, not clear"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': 4.5,
+            'volume_ml': 500,
+            'origin_country': 'Ireland',
+            'description': 'Description'
+        })
+        
+        # User enters blank to keep current values, only updates price
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name (keep)
+            '',  # brand (keep)
+            '',  # type (keep)
+            '6.99',  # price (update)
+            '',  # quantity (keep)
+            '',  # abv (keep)
+            '',  # volume_ml (keep)
+            '',  # origin_country (keep)
+            ''   # description (keep)
+        ]
+        
+        mock_update.return_value = (True, "Product updated successfully")
+        
+        result = update_product_cli()
+        
+        assert result is True
+        
+        # Verify only price is in update_data (blank = keep current)
+        call_args = mock_update.call_args[0]
+        update_data = call_args[1]
+        assert update_data.get('price') == pytest.approx(6.99, rel=1e-6)
+        # Optional fields should NOT be in update_data when user presses Enter
+        assert 'abv' not in update_data
+        assert 'volume_ml' not in update_data
+        assert 'origin_country' not in update_data
+        assert 'description' not in update_data
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_empty_required_field(self, mock_input, mock_lookup):
+        """Test validation error when required field is set to empty"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '   ',  # name (whitespace only - invalid)
+            '',  # brand
+            '',  # type
+            '',  # price
+            '',  # quantity
+            '',  # abv
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_quantity_non_integer(self, mock_input, mock_lookup):
+        """Test validation error for non-integer quantity"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '',  # price
+            'abc',  # quantity (invalid)
+            '',  # abv
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_volume_non_integer(self, mock_input, mock_lookup):
+        """Test validation error for non-integer volume"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '',  # price
+            '',  # quantity
+            '',  # abv
+            'not_a_number',  # volume_ml (invalid)
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_price_text(self, mock_input, mock_lookup):
+        """Test validation error for non-numeric price"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            'abc',  # price (invalid)
+            '',  # quantity
+            '',  # abv
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_abv_text(self, mock_input, mock_lookup):
+        """Test validation error for non-numeric ABV"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '',  # price
+            '',  # quantity
+            'not_a_number',  # abv (invalid)
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_negative_quantity(self, mock_input, mock_lookup):
+        """Test validation error for negative quantity"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '',  # price
+            '-10',  # quantity (negative)
+            '',  # abv
+            '',  # volume_ml
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
+    
+    @patch('src.product_management.lookup_product_by_id')
+    @patch('builtins.input')
+    def test_update_product_cli_validation_volume_zero(self, mock_input, mock_lookup):
+        """Test validation error for zero volume"""
+        from src.product_management import update_product_cli
+        
+        mock_lookup.return_value = (True, {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand',
+            'type': 'Beer',
+            'price': 5.99,
+            'quantity': 50,
+            'abv': None,
+            'volume_ml': None,
+            'origin_country': None,
+            'description': None
+        })
+        
+        mock_input.side_effect = [
+            '1',  # product id
+            '',  # name
+            '',  # brand
+            '',  # type
+            '',  # price
+            '',  # quantity
+            '',  # abv
+            '0',  # volume_ml (zero - invalid)
+            '',  # origin_country
+            ''   # description
+        ]
+        
+        result = update_product_cli()
+        
+        assert result is False
