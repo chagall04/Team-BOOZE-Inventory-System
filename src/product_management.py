@@ -202,7 +202,8 @@ def _validate_required_str(val, display_name):
     """Validate required string field."""
     if val is None:
         return None, None
-    if not val.strip():
+    # User entered a non-empty value - validate it's not just whitespace
+    if not val or not val.strip():
         return None, f"{display_name} is required"
     return val.strip(), None
 
@@ -297,17 +298,14 @@ def _process_optional_numeric_field(inputs, update_data, errors, field_key, disp
     val, err = _validate_numeric(inputs.get(field_key), display_name, conv, min_value=min_val, max_value=max_val, whole=(conv == int))
     if err:
         errors.append(err)
-    elif field_key in inputs:
-        if inputs[field_key] is None:
-            update_data[field_key] = None
-        elif val is not None:
-            update_data[field_key] = val
+    elif val is not None:
+        update_data[field_key] = val
 
 
 def _process_optional_text_field(inputs, update_data, field_key):
     """Process and validate optional text field."""
     val, _ = _validate_optional_str(inputs.get(field_key))
-    if val is not None or (field_key in inputs and inputs[field_key] is None):
+    if val is not None:
         update_data[field_key] = val
 
 

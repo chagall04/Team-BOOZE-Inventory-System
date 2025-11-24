@@ -614,7 +614,7 @@ class TestUpdateProductCli:
     @patch('src.database_manager.update_product')
     @patch('builtins.input')
     def test_update_product_cli_clear_optional_fields(self, mock_input, mock_update, mock_lookup):
-        """Test clearing optional fields by entering blank"""
+        """Test partial update - blank means keep current value, not clear"""
         from src.product_management import update_product_cli
         
         mock_lookup.return_value = (True, {
@@ -630,18 +630,18 @@ class TestUpdateProductCli:
             'description': 'Description'
         })
         
-        # User enters blank to clear optional fields but keeps required fields
+        # User enters blank to keep current values, only updates price
         mock_input.side_effect = [
             '1',  # product id
             '',  # name (keep)
             '',  # brand (keep)
             '',  # type (keep)
-            '6.99',  # price (update to see something changed)
+            '6.99',  # price (update)
             '',  # quantity (keep)
-            '',  # abv (clear)
-            '',  # volume_ml (clear)
-            '',  # origin_country (clear)
-            ''   # description (clear)
+            '',  # abv (keep)
+            '',  # volume_ml (keep)
+            '',  # origin_country (keep)
+            ''   # description (keep)
         ]
         
         mock_update.return_value = (True, "Product updated successfully")
@@ -650,14 +650,15 @@ class TestUpdateProductCli:
         
         assert result is True
         
-        # Verify optional fields are set to None and price is updated
+        # Verify only price is in update_data (blank = keep current)
         call_args = mock_update.call_args[0]
         update_data = call_args[1]
         assert update_data.get('price') == pytest.approx(6.99, rel=1e-6)
-        assert 'abv' in update_data and update_data['abv'] is None
-        assert 'volume_ml' in update_data and update_data['volume_ml'] is None
-        assert 'origin_country' in update_data and update_data['origin_country'] is None
-        assert 'description' in update_data and update_data['description'] is None
+        # Optional fields should NOT be in update_data when user presses Enter
+        assert 'abv' not in update_data
+        assert 'volume_ml' not in update_data
+        assert 'origin_country' not in update_data
+        assert 'description' not in update_data
     
     @patch('src.product_management.lookup_product_by_id')
     @patch('builtins.input')
