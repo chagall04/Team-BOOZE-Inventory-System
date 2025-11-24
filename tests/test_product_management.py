@@ -340,7 +340,7 @@ class TestLookupProductById:
 
 
 class TestUpdateProductCli:
-    """Test class for update_product_cli function"""
+    """test class for update_product_cli function"""
     
     @patch('src.product_management.lookup_product_by_id')
     @patch('src.database_manager.update_product')
