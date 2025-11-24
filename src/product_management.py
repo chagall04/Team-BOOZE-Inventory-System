@@ -6,7 +6,7 @@
 and viewing products in the 'booze' table."""
 
 import sqlite3
-from src.database_manager import insert_product, get_db_connection
+from src.database_manager import insert_product, get_db_connection, get_all_products
 
 # Constants for field names
 INITIAL_STOCK_FIELD = "Initial stock"
@@ -137,7 +137,33 @@ def add_new_product():
     return False
 
 
-
+def view_all_products():
+    """
+    SCRUM-46: Display all products in inventory
+    
+    Shows a clear, paginated list with key details:
+    - ID, name, price, current stock
+    """
+    print("\n=== All Products ===")
+    
+    products = get_all_products()
+    
+    if not products:
+        print("No products found in inventory.")
+        return
+    
+    # Display header
+    print(f"\n{'ID':<5} {'Name':<30} {'Brand':<20} {'Price (€)':<12} {'Stock':<8}")
+    print("-" * 80)
+    
+    # Display each product
+    for product in products:
+        price_formatted = f"€{product['price']:.2f}"
+        print(f"{product['id']:<5} {product['name']:<30} {product['brand']:<20} "
+              f"{price_formatted:<12} {product['quantity_on_hand']:<8}")
+    
+    print(f"\nTotal products: {len(products)}")
+    return True
 
 
 def lookup_product_by_id(product_id):
