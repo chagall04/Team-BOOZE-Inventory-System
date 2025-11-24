@@ -442,3 +442,65 @@ def process_sale_transaction(cart_items, total_amount):
         return False, str(e)
     finally:
         conn.close()
+
+
+
+def update_product_details(product_id, data):
+    """Update existing product details in the database
+    
+    Args:
+        product_id (int): ID of the product to update
+        data (dict): Dictionary containing fields to update. Valid keys are:
+            - name (str)
+            - brand (str)
+            - type (str)
+            - abv (float)
+            - volume_ml (int)
+            - origin_country (str)
+            - price (float)
+            - quantity_on_hand (int)
+            - description (str)
+            
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Build update query dynamically based on provided fields
+    valid_fields = [
+        'name', 'brand', 'type', 'abv', 'volume_ml',
+        'origin_country', 'price', 'quantity_on_hand', 'description'
+    ]
+    
+    # Filter out invalid fields, but keep None values to allow clearing optional fields
+    update_data = {k: v for k, v in data.items() if k in valid_fields}
+    
+    if not update_data:
+        conn.close()
+        return False, "No valid fields to update"
+    
+    try:
+        # Construct UPDATE query
+        set_clause = ", ".join(f"{field} = ?" for field in update_data.keys())
+        query = f"UPDATE booze SET {set_clause} WHERE id = ?"
+        
+        # Execute query with values
+        values = list(update_data.values()) + [product_id]
+        cursor.execute(query, values)
+        
+        if cursor.rowcount == 0:
+            return False, "Product not found"
+            
+        conn.commit()
+        return True, "Product updated successfully"
+        
+    except sqlite3.Error as e:
+        return False, f"Database error: {str(e)}"
+    finally:
+        conn.close()
+
+
+def update_product(product_id, data):
+    """Alias for update_product_details for backward compatibility"""
+    return update_product_details(product_id, data)
