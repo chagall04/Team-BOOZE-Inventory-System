@@ -4,8 +4,8 @@
 This module provides database operations for users, products, and sales transactions.
 """
 import sqlite3
-from datetime import datetime
 import bcrypt
+from datetime import datetime
 
 DB_NAME = "inventory.db"
 
@@ -244,6 +244,49 @@ def get_low_stock_report(threshold):
             })
         
         return low_stock_products
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()
+
+def get_all_products():
+    """
+    scrum-45: retrieve all products from inventory
+    
+    returns:
+        list of dicts with complete product info
+        each dict contains: id, name, brand, type, abv, volume_ml, 
+                           origin_country, price, quantity_on_hand, description
+        returns empty list on error
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT id, name, brand, type, abv, volume_ml, origin_country, 
+                      price, quantity_on_hand, description 
+               FROM booze 
+               ORDER BY name ASC"""
+        )
+        results = cursor.fetchall()
+
+        # convert Row objects to dictionaries
+        products = []
+        for row in results:
+            products.append({
+                "id": row["id"],
+                "name": row["name"],
+                "brand": row["brand"],
+                "type": row["type"],
+                "abv": row["abv"],
+                "volume_ml": row["volume_ml"],
+                "origin_country": row["origin_country"],
+                "price": row["price"],
+                "quantity_on_hand": row["quantity_on_hand"],
+                "description": row["description"]
+            })
+
+        return products
     except sqlite3.Error:
         return []
     finally:

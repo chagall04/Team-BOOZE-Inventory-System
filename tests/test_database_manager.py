@@ -5,9 +5,9 @@
 """Tests for database operations including users, products, and transactions."""
 
 import sqlite3
-from unittest.mock import patch, MagicMock
 import pytest
-from src.database_manager import get_user_by_username, create_user, delete_user, insert_product
+from unittest.mock import patch, MagicMock
+from src.database_manager import get_user_by_username, create_user, delete_user, insert_product, get_all_products
 
 
 
@@ -724,3 +724,182 @@ class TestInventoryTrackingFunctions:
         
         assert result is False
         mock_conn.close.assert_called_once()
+
+
+# SCRUM-45 Get All Products Tests
+@patch('src.database_manager.get_db_connection')
+def test_get_all_products_returns_all_products(mock_get_db):
+    """Test that get_all_products() retrieves all products from database"""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    # Mock three products
+    mock_rows = [
+        {
+            'id': 1,
+            'name': 'Test Beer',
+            'brand': 'Test Brand 2',
+            'type': 'Beer',
+            'abv': 5.0,
+            'volume_ml': 500,
+            'origin_country': 'Germany',
+            'price': 4.50,
+            'quantity_on_hand': 100,
+            'description': 'Test beer description'
+        },
+        {
+            'id': 2,
+            'name': 'Test Whiskey',
+            'brand': 'Test Brand 1',
+            'type': 'Whiskey',
+            'abv': 40.0,
+            'volume_ml': 700,
+            'origin_country': 'Ireland',
+            'price': 30.00,
+            'quantity_on_hand': 25,
+            'description': 'Test whiskey description'
+        },
+        {
+            'id': 3,
+            'name': 'Test Wine',
+            'brand': 'Test Brand 3',
+            'type': 'Wine',
+            'abv': 12.5,
+            'volume_ml': 750,
+            'origin_country': 'France',
+            'price': 15.99,
+            'quantity_on_hand': 50,
+            'description': 'Test wine description'
+        }
+    ]
+    
+    mock_cursor.fetchall.return_value = mock_rows
+    
+    products = get_all_products()
+    
+    # Verify all products are returned
+    assert len(products) == 3
+    
+    # Verify all fields are present for first product
+    assert products[0]['id'] == 1
+    assert products[0]['name'] == 'Test Beer'
+    assert products[0]['brand'] == 'Test Brand 2'
+    assert products[0]['type'] == 'Beer'
+    assert products[0]['abv'] == pytest.approx(5.0)
+    assert products[0]['volume_ml'] == 500
+    assert products[0]['origin_country'] == 'Germany'
+    assert products[0]['price'] == pytest.approx(4.50)
+    assert products[0]['quantity_on_hand'] == 100
+    assert products[0]['description'] == 'Test beer description'
+    
+    # Verify SQL query ordered by name
+    call_args = mock_cursor.execute.call_args[0][0]
+    assert 'ORDER BY name ASC' in call_args
+    mock_conn.close.assert_called_once()
+
+
+@patch('src.database_manager.get_db_connection')
+def test_get_all_products_empty_database(mock_get_db):
+    """Test that get_all_products() returns empty list when no products exist"""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = []
+    
+    products = get_all_products()
+    
+    assert products == []
+    assert isinstance(products, list)
+    mock_conn.close.assert_called_once()
+
+
+@patch('src.database_manager.get_db_connection')
+def test_get_all_products_with_null_optional_fields(mock_get_db):
+    """Test that get_all_products() handles products with null optional fields"""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    mock_rows = [{
+        'id': 1,
+        'name': 'Minimal Product',
+        'brand': 'Minimal Brand',
+        'type': 'Spirit',
+        'abv': None,
+        'volume_ml': None,
+        'origin_country': None,
+        'price': 20.00,
+        'quantity_on_hand': 10,
+        'description': None
+    }]
+    
+    mock_cursor.fetchall.return_value = mock_rows
+    
+    products = get_all_products()
+    
+    assert len(products) == 1
+    assert products[0]['name'] == 'Minimal Product'
+    assert products[0]['abv'] is None
+    assert products[0]['volume_ml'] is None
+    assert products[0]['origin_country'] is None
+    assert products[0]['description'] is None
+    assert products[0]['price'] == pytest.approx(20.00)
+    assert products[0]['quantity_on_hand'] == 10
+    mock_conn.close.assert_called_once()
+
+
+@patch('src.database_manager.get_db_connection')
+def test_get_all_products_returns_dictionaries(mock_get_db):
+    """Test that get_all_products() returns list of dictionaries"""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    mock_rows = [{
+        'id': 1,
+        'name': 'Test Product',
+        'brand': 'Test Brand',
+        'type': 'Test Type',
+        'abv': None,
+        'volume_ml': None,
+        'origin_country': None,
+        'price': 10.00,
+        'quantity_on_hand': 5,
+        'description': None
+    }]
+    
+    mock_cursor.fetchall.return_value = mock_rows
+    
+    products = get_all_products()
+    
+    assert isinstance(products, list)
+    assert len(products) == 1
+    assert isinstance(products[0], dict)
+    
+    # Verify dictionary keys
+    expected_keys = {'id', 'name', 'brand', 'type', 'abv', 'volume_ml', 
+                     'origin_country', 'price', 'quantity_on_hand', 'description'}
+    assert set(products[0].keys()) == expected_keys
+    mock_conn.close.assert_called_once()
+
+
+@patch('src.database_manager.get_db_connection')
+def test_get_all_products_handles_database_error(mock_get_db):
+    """Test that get_all_products() returns empty list on database error"""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    mock_cursor.execute.side_effect = sqlite3.Error("Simulated database error")
+    
+    products = get_all_products()
+    
+    assert products == []
+    assert isinstance(products, list)
+    mock_conn.close.assert_called_once()
+
