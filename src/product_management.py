@@ -8,6 +8,9 @@ and viewing products in the 'booze' table."""
 import sqlite3
 from src.database_manager import insert_product
 
+# Constants for field names
+INITIAL_STOCK_FIELD = "Initial stock"
+
 def validate_required_field(field_value, field_name):
     """Validate that a required field is not empty"""
     if not field_value or len(field_value.strip()) == 0:
@@ -18,7 +21,7 @@ def get_min_value_error(field_name, min_value, max_value):
     """Get appropriate error message for minimum value validation"""
     if field_name == "Price":
         return [f"{field_name} must be non-negative"]
-    if field_name == "Initial stock":
+    if field_name == INITIAL_STOCK_FIELD:
         return [f"{field_name} quantity must be non-negative"]
     if field_name == "Volume" and min_value == 1:
         return [f"{field_name} must be greater than 0"]
@@ -26,7 +29,7 @@ def get_min_value_error(field_name, min_value, max_value):
 
 def get_value_error(field_name, convert_func):
     """Get appropriate error message for value conversion errors"""
-    if convert_func == int and field_name == "Initial stock":
+    if convert_func == int and field_name == INITIAL_STOCK_FIELD:
         return [f"{field_name} must be a valid whole number"]
     return [f"{field_name} must be a valid number"]
 
@@ -58,7 +61,7 @@ def validate_product_data(name, brand, type_, price, quantity, abv=None, volume_
 
     # Quantity validation
     quantity_errors, _ = validate_numeric_value(
-        quantity, "Initial stock", int, min_value=0)
+        quantity, INITIAL_STOCK_FIELD, int, min_value=0)
     errors.extend(quantity_errors)
 
     # Optional field validation
@@ -191,26 +194,149 @@ def prompt_with_default(prompt_text, default):
     val = input(f"{prompt_text} [{default}]: ").strip()
     return None if val == "" else val
 
+
+def _validate_required_str(val, display_name):
+    """Validate required string field."""
+    if val is None:
+        return None, None
+    if not val.strip():
+        return None, f"{display_name} is required"
+    return val.strip(), None
+
+
+def _validate_optional_str(val):
+    """Validate optional string field."""
+    if val is None:
+        return None, None
+    return (val.strip() if val.strip() else None), None
+
+
+def _validate_numeric(val, display_name, conv, min_value=None, max_value=None, whole=False):
+    """Validate numeric field with optional range checks."""
+    if val is None:
+        return None, None
+    if val == "":
+        return None, None
+    try:
+        num = conv(val)
+    except ValueError:
+        if whole:
+            return None, f"{display_name} must be a valid whole number"
+        return None, f"{display_name} must be a valid number"
+    if min_value is not None and num < min_value:
+        if display_name.lower().startswith("price"):
+            return None, f"{display_name} must be non-negative"
+        return None, f"{display_name} must be between {min_value} and {max_value if max_value is not None else '∞'}"
+    if max_value is not None and num > max_value:
+        return None, f"{display_name} must be between {min_value if min_value is not None else 0} and {max_value}"
+    return num, None
+
+
+def _get_product_id_from_input():
+    """Get and validate product ID from user input."""
+    pid_input = input("Enter Product ID to update: ").strip()
+    try:
+        return int(pid_input)
+    except ValueError:
+        return None
+
+
+def _collect_user_inputs(product):
+    """Collect all user inputs for product update."""
+    prompts = [
+        ('name', "Product Name", product['name']),
+        ('brand', "Brand", product['brand']),
+        ('type', "Type", product['type']),
+        ('price', "Price (numeric)", product['price']),
+        ('quantity', "Quantity on hand (whole number)", product['quantity']),
+        ('abv', "ABV %", product['abv'] if product['abv'] is not None else ""),
+        ('volume_ml', "Volume in ml", product['volume_ml'] if product['volume_ml'] is not None else ""),
+        ('origin_country', "Country of Origin", product['origin_country'] if product['origin_country'] else ""),
+        ('description', "Description", product['description'] if product['description'] else "")
+    ]
+    
+    inputs = {}
+    for key, prompt_text, default in prompts:
+        inputs[key] = prompt_with_default(prompt_text, default)
+    return inputs
+
+
+def _process_required_fields(inputs, update_data, errors):
+    """Process and validate required text fields."""
+    for key, display in (('name', 'Product name'), ('brand', 'Brand name'), ('type', 'Product type')):
+        val, err = _validate_required_str(inputs.get(key), display)
+        if err:
+            errors.append(err)
+        elif val is not None:
+            update_data['type' if key == 'type' else key] = val
+
+
+def _process_price_field(inputs, update_data, errors):
+    """Process and validate price field."""
+    price_val, price_err = _validate_numeric(inputs.get('price'), 'Price', float, min_value=0)
+    if price_err:
+        errors.append(price_err)
+    elif price_val is not None:
+        update_data['price'] = price_val
+
+
+def _process_quantity_field(inputs, update_data, errors):
+    """Process and validate quantity field."""
+    qty_val, qty_err = _validate_numeric(inputs.get('quantity'), 'Quantity', int, min_value=0, whole=True)
+    if qty_err:
+        errors.append(qty_err)
+    elif qty_val is not None:
+        update_data['quantity_on_hand'] = qty_val
+
+
+def _process_optional_numeric_field(inputs, update_data, errors, field_key, display_name, conv, min_val, max_val=None):
+    """Process and validate optional numeric field."""
+    val, err = _validate_numeric(inputs.get(field_key), display_name, conv, min_value=min_val, max_value=max_val, whole=(conv == int))
+    if err:
+        errors.append(err)
+    elif field_key in inputs:
+        if inputs[field_key] == "":
+            update_data[field_key] = None
+        elif val is not None:
+            update_data[field_key] = val
+
+
+def _process_optional_text_field(inputs, update_data, field_key):
+    """Process and validate optional text field."""
+    val, _ = _validate_optional_str(inputs.get(field_key))
+    if val is not None or (field_key in inputs and inputs[field_key] == ""):
+        update_data[field_key] = val
+
+
+def _validate_and_build_update_data(inputs):
+    """Validate inputs and build update data dictionary."""
+    update_data = {}
+    errors = []
+
+    _process_required_fields(inputs, update_data, errors)
+    _process_price_field(inputs, update_data, errors)
+    _process_quantity_field(inputs, update_data, errors)
+    _process_optional_numeric_field(inputs, update_data, errors, 'abv', 'ABV', float, 0, 100)
+    _process_optional_numeric_field(inputs, update_data, errors, 'volume_ml', 'Volume', int, 1)
+    _process_optional_text_field(inputs, update_data, 'origin_country')
+    _process_optional_text_field(inputs, update_data, 'description')
+
+    return update_data, errors
+
+
 def update_product_cli():
     """
-    CLI flow for SCRUM-43: Update Product
+    CLI flow for SCRUM-6: Update Product
     - prompts for product id
     - shows current values
     - prompts for new values (press Enter to keep current)
-    - validates and calls database_manager.update_product_details()
+    - validates and calls database_manager.update_product()
     """
     from src import database_manager
 
     print("\n=== Update Product ===")
 
-    def get_product_id_from_input():
-        pid_input = input("Enter Product ID to update: ").strip()
-        try:
-            return int(pid_input)
-        except ValueError:
-            return None
-
-    product_id = get_product_id_from_input()
+    product_id = _get_product_id_from_input()
     if product_id is None:
         print("Invalid product ID")
         return False
@@ -223,115 +349,8 @@ def update_product_cli():
     product = res
     print("\nCurrent product details (leave blank to keep current value):")
 
-    # Prompt for all fields in a compact loop
-    prompts = [
-        ('name', "Product Name", product['name']),
-        ('brand', "Brand", product['brand']),
-        ('type', "Type", product['type']),
-        ('price', "Price (numeric)", product['price']),
-        ('quantity', "Quantity on hand (whole number)", product['quantity']),
-        ('abv', "ABV %", product['abv'] if product['abv'] is not None else ""),
-        ('volume_ml', "Volume in ml", product['volume_ml'] if product['volume_ml'] is not None else ""),
-        ('origin_country', "Country of Origin", product['origin_country'] if product['origin_country'] else ""),
-        ('description', "Description", product['description'] if product['description'] else "")
-    ]
-
-    inputs = {}
-    for key, prompt_text, default in prompts:
-        inputs[key] = prompt_with_default(prompt_text, default)
-
-    # Validation helpers to keep main flow simple
-    def required_str(key, display_name):
-        val = inputs.get(key)
-        if val is None:
-            return None, None
-        if not val.strip():
-            return None, f"{display_name} is required"
-        return val.strip(), None
-
-    def optional_str_or_none(key):
-        val = inputs.get(key)
-        if val is None:
-            return None, None
-        return (val.strip() if val.strip() else None), None
-
-    def parse_numeric(key, display_name, conv, min_value=None, max_value=None, whole=False):
-        val = inputs.get(key)
-        if val is None:
-            return None, None
-        if val == "":
-            # explicit blank means set to None for optional numeric fields
-            return None, None
-        try:
-            num = conv(val)
-        except ValueError:
-            if whole:
-                return None, f"{display_name} must be a valid whole number"
-            return None, f"{display_name} must be a valid number"
-        if min_value is not None and num < min_value:
-            if display_name.lower().startswith("price"):
-                return None, f"{display_name} must be non-negative"
-            return None, f"{display_name} must be between {min_value} and {max_value if max_value is not None else '∞'}"
-        if max_value is not None and num > max_value:
-            return None, f"{display_name} must be between {min_value if min_value is not None else 0} and {max_value}"
-        return num, None
-
-    # Build update payload
-    update_data = {}
-    errors = []
-
-    # Required textual fields
-    for key, display in (('name', 'Product name'), ('brand', 'Brand name'), ('type', 'Product type')):
-        val, err = required_str(key, display)
-        if err:
-            errors.append(err)
-        elif val is not None:
-            # map 'type' key to 'type' as earlier code used 'type' as column name
-            update_data['type' if key == 'type' else key] = val
-
-    # Price
-    price_val, price_err = parse_numeric('price', 'Price', float, min_value=0)
-    if price_err:
-        errors.append(price_err)
-    elif price_val is not None:
-        update_data['price'] = price_val
-
-    # Quantity
-    qty_val, qty_err = parse_numeric('quantity', 'Quantity', int, min_value=0, whole=True)
-    if qty_err:
-        errors.append(qty_err)
-    elif qty_val is not None:
-        update_data['quantity_on_hand'] = qty_val
-
-    # ABV (optional, allow blank -> keep or clear)
-    abv_val, abv_err = parse_numeric('abv', 'ABV', float, min_value=0, max_value=100)
-    if abv_err:
-        errors.append(abv_err)
-    elif 'abv' in inputs:
-        # explicit blank should set to None, handled by parse_numeric returning (None, None)
-        if inputs['abv'] == "":
-            update_data['abv'] = None
-        elif abv_val is not None:
-            update_data['abv'] = abv_val
-
-    # Volume
-    vol_val, vol_err = parse_numeric('volume_ml', 'Volume', int, min_value=1, whole=True)
-    if vol_err:
-        errors.append(vol_err)
-    elif 'volume_ml' in inputs:
-        if inputs['volume_ml'] == "":
-            update_data['volume_ml'] = None
-        elif vol_val is not None:
-            update_data['volume_ml'] = vol_val
-
-    # Origin and description
-    origin_val, _ = optional_str_or_none('origin_country')
-    if origin_val is not None or ('origin_country' in inputs and inputs['origin_country'] == ""):
-        update_data['origin_country'] = origin_val
-
-    desc_val, _ = optional_str_or_none('description')
-    if desc_val is not None or ('description' in inputs and inputs['description'] == ""):
-        update_data['description'] = desc_val
+    inputs = _collect_user_inputs(product)
+    update_data, errors = _validate_and_build_update_data(inputs)
 
     if errors:
         print("\nError: Invalid input:")
@@ -342,7 +361,6 @@ def update_product_cli():
     if not update_data:
         print("No changes provided.")
         return False
-
 
     success, msg = database_manager.update_product(product_id, update_data)
     if success:

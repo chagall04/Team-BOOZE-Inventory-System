@@ -311,11 +311,11 @@ def update_product_details(product_id, data):
         'origin_country', 'price', 'quantity_on_hand', 'description'
     ]
     
-    # Filter out None values and invalid fields
-    update_data = {k: v for k, v in data.items() 
-                  if k in valid_fields and v is not None}
+    # Filter out invalid fields, but keep None values to allow clearing optional fields
+    update_data = {k: v for k, v in data.items() if k in valid_fields}
     
     if not update_data:
+        conn.close()
         return False, "No valid fields to update"
     
     try:
@@ -337,3 +337,8 @@ def update_product_details(product_id, data):
         return False, f"Database error: {str(e)}"
     finally:
         conn.close()
+
+
+def update_product(product_id, data):
+    """Alias for update_product_details for backward compatibility"""
+    return update_product_details(product_id, data)
