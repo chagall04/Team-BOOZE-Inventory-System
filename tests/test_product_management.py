@@ -276,14 +276,14 @@ def test_add_new_product_db_failure():
 class TestLookupProductById:
     """test class for lookup_product_by_id function"""
     
-    @patch('sqlite3.connect')
-    def test_lookup_product_by_id_success(self, mock_connect):
+    @patch('src.product_management.get_db_connection')
+    def test_lookup_product_by_id_success(self, mock_get_db):
         """Test successfully looking up a product by ID"""
         from src.product_management import lookup_product_by_id
         
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_connect.return_value = mock_conn
+        mock_get_db.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         
         mock_row = (1, 'Test Beer', 'Test Brand', 'Beer', 5.99, 50, 4.5, 500, 'Ireland', 'Description')
@@ -304,14 +304,14 @@ class TestLookupProductById:
         assert product['description'] == 'Description'
         mock_conn.close.assert_called_once()
     
-    @patch('sqlite3.connect')
-    def test_lookup_product_by_id_not_found(self, mock_connect):
+    @patch('src.product_management.get_db_connection')
+    def test_lookup_product_by_id_not_found(self, mock_get_db):
         """Test looking up non-existent product"""
         from src.product_management import lookup_product_by_id
         
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_connect.return_value = mock_conn
+        mock_get_db.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.fetchone.return_value = None
         
@@ -321,14 +321,14 @@ class TestLookupProductById:
         assert "No product found with ID: 999" in message
         mock_conn.close.assert_called_once()
     
-    @patch('sqlite3.connect')
-    def test_lookup_product_by_id_database_error(self, mock_connect):
+    @patch('src.product_management.get_db_connection')
+    def test_lookup_product_by_id_database_error(self, mock_get_db):
         """Test database error during lookup"""
         from src.product_management import lookup_product_by_id
         
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_connect.return_value = mock_conn
+        mock_get_db.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.execute.side_effect = sqlite3.Error("Connection failed")
         
