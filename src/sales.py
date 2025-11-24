@@ -14,7 +14,7 @@ from src.database_manager import (
 # Constants
 SALE_CANCELLED_MSG = "Sale cancelled."
 
-# scrum-71/72: store last successfully completed transaction ID
+# scrum-72: store last successfully completed transaction ID
 LAST_TRANSACTION_ID = None
 
 
