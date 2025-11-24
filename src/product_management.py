@@ -154,7 +154,7 @@ def view_all_products():
     
     if not products:
         print("No products found in inventory.")
-        return
+        return False
     
     # Display header
     print(f"\n{'ID':<5} {'Name':<30} {'Brand':<20} {'Price (€)':<12} {'Stock':<8}")
