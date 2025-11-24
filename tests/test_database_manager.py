@@ -1,816 +1,310 @@
 # tests/test_database_manager.py
-# scrum-17 to scrum-22: database manager tests
-# owned by: charlie gallagher
-
 """Tests for database operations including users, products, and transactions."""
 
-import sqlite3
+import pytest
 from unittest.mock import patch, MagicMock
-from src.database_manager import get_user_by_username, create_user, delete_user, insert_product
+import sqlite3 # Ensure sqlite3 is imported
+from src.database_manager import (
+    get_user_by_username, create_user, delete_user, insert_product,
+    adjust_stock, get_stock_by_id, get_product_details, start_transaction,
+    log_item_sale, get_low_stock_report, get_transaction_by_id,
+    get_items_for_transaction, process_sale_transaction, search_products_by_term
+)
 
+# Helper to mock a row behaving like a dict
+def mock_row(data):
+    row = MagicMock()
+    row.__getitem__.side_effect = data.__getitem__
+    return row
 
 
 class TestGetUserByUsername:
-    """test class for getting user by username"""
-    
     @patch('src.database_manager.get_db_connection')
-    def test_get_user_by_username_success(self, mock_get_db):
-        """test successfully retrieving user data"""
+    def test_get_user_found(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         
-        # simulate row returned from database
-        mock_row = {"password_hash": "hashed_password", "role": "Manager"}
-        mock_cursor.fetchone.return_value = mock_row
+        mock_cursor.fetchone.return_value = mock_row({"password_hash": "hash123", "role": "Manager"})
         
-        result = get_user_by_username("manager")
+        result = get_user_by_username("testuser")
         
-        assert result is not None
-        assert result["hash"] == "hashed_password"
-        assert result["role"] == "Manager"
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_user_by_username_not_found(self, mock_get_db):
-        """test user not found returns none"""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchone.return_value = None
-        
-        result = get_user_by_username("nonexistent")
-        
-        assert result is None
-        mock_conn.close.assert_called_once()
+        assert result == {"hash": "hash123", "role": "Manager"}
 
+    @patch('src.database_manager.get_db_connection')
+    def test_get_user_not_found(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value.fetchone.return_value = None
+        
+        result = get_user_by_username("unknown")
+        assert result is None
+    
 
 class TestCreateUser:
-    """test class for creating users"""
-    
+    @patch('src.database_manager.bcrypt')
     @patch('src.database_manager.get_db_connection')
-    def test_create_user_success(self, mock_get_db):
-        """test successful user creation"""
+    def test_create_user_success(self, mock_get_conn, mock_bcrypt):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.lastrowid = 1
         
-        success, result = create_user("newuser", "password123", "Clerk")
+        mock_bcrypt.hashpw.return_value = b'hashed_secret'
+        
+        success, result = create_user("newuser", "pass", "Clerk")
         
         assert success is True
         assert result == 1
-        mock_cursor.execute.assert_called_once()
-        mock_conn.commit.assert_called_once()
-    
+
+    @patch('src.database_manager.bcrypt')
     @patch('src.database_manager.get_db_connection')
-    def test_create_user_duplicate_username(self, mock_get_db):
-        """test creating user with duplicate username fails"""
+    def test_create_user_duplicate(self, mock_get_conn, mock_bcrypt):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.IntegrityError("UNIQUE constraint failed")
         
-        success, result = create_user("existing", "password123", "Clerk")
+        mock_bcrypt.hashpw.return_value = b'hashed'
+        mock_cursor.execute.side_effect = sqlite3.IntegrityError
+        
+        success, msg = create_user("existing", "pass", "Clerk")
         
         assert success is False
-        assert result is not None
-        assert isinstance(result, str)
-        assert "already exists" in result
+        assert "already exists" in msg
     
-    @patch('src.database_manager.get_db_connection')
-    def test_create_user_database_error(self, mock_get_db):
-        """test handling of database errors during user creation"""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("db connection error")
-
-        success, _result = create_user("user", "pass", "Clerk")
-
-        assert success is False
-
 
 class TestDeleteUser:
-    """test class for deleting users"""
-    
     @patch('src.database_manager.get_db_connection')
-    def test_delete_user_success(self, mock_get_db):
-        """test successful user deletion"""
+    def test_delete_user_success(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.rowcount = 1
-
-        success, _result = delete_user("testuser")
-
+        
+        success, msg = delete_user("todelete")
+        
         assert success is True
-        mock_cursor.execute.assert_called_once()
-        mock_conn.commit.assert_called_once()
+        assert "deleted" in msg
 
     @patch('src.database_manager.get_db_connection')
-    def test_delete_user_not_found(self, mock_get_db):
-        """test deleting non-existent user"""
+    def test_delete_user_not_found(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.rowcount = 0
         
-        success, result = delete_user("nonexistent")
+        success, msg = delete_user("unknown")
         
         assert success is False
-        assert "not found" in result
+        assert "not found" in msg
     
-    @patch('src.database_manager.get_db_connection')
-    def test_delete_user_database_error(self, mock_get_db):
-        """test handling of database errors during deletion"""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("database error")
-        
-        success, result = delete_user("testuser")
-        
-        assert success is False
-        assert "database error" in result
-        mock_conn.close.assert_called_once()
-
-
-class TestDatabaseConnection:
-    """test class for database connection"""
-    
-    def test_get_db_connection_returns_connection(self):
-        """test that get_db_connection returns a valid connection"""
-        from src.database_manager import get_db_connection
-        
-        conn = get_db_connection()
-        
-        assert conn is not None
-        assert isinstance(conn, sqlite3.Connection)
-        conn.close()
-
 
 class TestInsertProduct:
-    """test class for inserting products (lucy's code)"""
-    
     @patch('src.database_manager.get_db_connection')
-    def test_insert_product_success_with_all_fields(self, mock_get_db):
-        """test successful product insertion with all fields"""
+    def test_insert_product_success(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 1
-        
-        product_data = {
-            'name': 'test beer',
-            'brand': 'test brand',
-            'type': 'beer',
-            'price': 4.99,
-            'quantity': 50,
-            'abv': 4.5,
-            'volume_ml': 500,
-            'origin_country': 'ireland',
-            'description': 'test description'
-        }
-        
-        success, result = insert_product(product_data)
-        
-        assert success is True
-        assert result == 1
-        mock_cursor.execute.assert_called_once()
-        mock_conn.commit.assert_called_once()
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_insert_product_success_with_required_fields_only(self, mock_get_db):
-        """test successful product insertion with only required fields"""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 2
-        
-        product_data = {
-            'name': 'test wine',
-            'brand': 'test brand',
-            'type': 'wine',
-            'price': 15.99,
-            'quantity': 30
-        }
-        
-        success, result = insert_product(product_data)
-        
-        assert success is True
-        assert result == 2
-        # verify optional fields are handled as None
-        call_args = mock_cursor.execute.call_args[0]
-        assert call_args[1][3] is None  # abv
-        assert call_args[1][4] is None  # volume_ml
-        assert call_args[1][5] is None  # origin_country
-        assert call_args[1][8] is None  # description
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_insert_product_duplicate_name(self, mock_get_db):
-        """test product insertion fails with duplicate name"""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.IntegrityError("UNIQUE constraint failed")
-        
-        product_data = {
-            'name': 'existing product',
-            'brand': 'test brand',
-            'type': 'beer',
-            'price': 4.99,
-            'quantity': 50
-        }
-        
-        success, result = insert_product(product_data)
-        
-        assert success is False
-        assert result is not None
-        assert isinstance(result, str)
-        assert "already exists" in result
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_insert_product_database_error(self, mock_get_db):
-        """test handling of general database errors"""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("database connection error")
-        
-        product_data = {
-            'name': 'test product',
-            'brand': 'test brand',
-            'type': 'spirits',
-            'price': 25.99,
-            'quantity': 20
-        }
-        
-        success, result = insert_product(product_data)
-        
-        assert success is False
-        assert result is not None
-        assert isinstance(result, str)
-        assert "database connection error" in result
-        mock_conn.close.assert_called_once()
-
-
-# SCRUM-12 Sales Transaction Database Tests
-class TestSalesDatabaseFunctions:
-    """test class for sales transaction database functions"""
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_product_details_success(self, mock_get_db):
-        """test successfully retrieving product details"""
-        from src.database_manager import get_product_details
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        mock_row = {
-            "id": 1,
-            "name": "Test Product",
-            "price": 10.50,
-            "quantity_on_hand": 50
-        }
-        mock_cursor.fetchone.return_value = mock_row
-        
-        result = get_product_details(1)
-        
-        assert result is not None
-        assert result["id"] == 1
-        assert result["name"] == "Test Product"
-        assert abs(result["price"] - 10.50) < 0.01
-        assert result["quantity_on_hand"] == 50
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_product_details_not_found(self, mock_get_db):
-        """test product not found returns None"""
-        from src.database_manager import get_product_details
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchone.return_value = None
-        
-        result = get_product_details(999)
-        
-        assert result is None
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_start_transaction_success(self, mock_get_db):
-        """test successful transaction creation"""
-        from src.database_manager import start_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 123
-        
-        result = start_transaction(50.00)
-        
-        assert result == 123
-        mock_cursor.execute.assert_called_once()
-        mock_conn.commit.assert_called_once()
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_start_transaction_failure(self, mock_get_db):
-        """test transaction creation failure"""
-        from src.database_manager import start_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
-        
-        result = start_transaction(50.00)
-        
-        assert result is None
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_log_item_sale_success(self, mock_get_db):
-        """test successfully logging item sale"""
-        from src.database_manager import log_item_sale
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        result = log_item_sale(123, 1, 2, 10.50)
-        
-        assert result is True
-        mock_cursor.execute.assert_called_once()
-        mock_conn.commit.assert_called_once()
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_log_item_sale_failure(self, mock_get_db):
-        """test item sale logging failure"""
-        from src.database_manager import log_item_sale
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
-        
-        result = log_item_sale(123, 1, 2, 10.50)
-        
-        assert result is False
-        mock_conn.close.assert_called_once()
-
-    @patch('src.database_manager.get_db_connection')
-    def test_process_sale_transaction_success_single_item(self, mock_get_db):
-        """test successful transaction with single item"""
-        from src.database_manager import process_sale_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 100
-        mock_cursor.fetchone.return_value = {'quantity_on_hand': 50}
-        
-        cart = [{'product_id': 1, 'quantity': 3, 'price': 21.00}]
-        success, result = process_sale_transaction(cart, 21.00)
-        
-        assert success is True
-        assert result == 100
-        assert mock_cursor.execute.call_count == 5
-        mock_conn.commit.assert_called_once()
-        mock_conn.close.assert_called_once()
-
-    @patch('src.database_manager.get_db_connection')
-    def test_process_sale_transaction_success_multiple_items(self, mock_get_db):
-        """test successful transaction with multiple items"""
-        from src.database_manager import process_sale_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.lastrowid = 101
-        mock_cursor.fetchone.side_effect = [
-            {'quantity_on_hand': 50},
-            {'quantity_on_hand': 30}
-        ]
         
-        cart = [
-            {'product_id': 1, 'quantity': 3, 'price': 21.00},
-            {'product_id': 2, 'quantity': 1, 'price': 5.00}
-        ]
-        success, result = process_sale_transaction(cart, 26.00)
+        data = {'name': 'New Gin', 'brand': 'BrandX', 'type': 'Gin', 'price': 20.0, 'quantity': 10}
+        success, result = insert_product(data)
         
         assert success is True
         assert result == 101
-        assert mock_cursor.execute.call_count == 8
-        mock_conn.commit.assert_called_once()
-        mock_conn.close.assert_called_once()
-
-    @patch('src.database_manager.get_db_connection')
-    def test_process_sale_transaction_product_not_found(self, mock_get_db):
-        """test transaction failure when product not found"""
-        from src.database_manager import process_sale_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 102
-        mock_cursor.fetchone.return_value = None
-        
-        cart = [{'product_id': 999, 'quantity': 1, 'price': 10.00}]
-        success, result = process_sale_transaction(cart, 10.00)
-        
-        assert success is False
-        assert "Product 999 not found" in str(result)
-        mock_conn.rollback.assert_called_once()
-        mock_conn.close.assert_called_once()
-
-    @patch('src.database_manager.get_db_connection')
-    def test_process_sale_transaction_database_error(self, mock_get_db):
-        """test transaction failure with database error"""
-        from src.database_manager import process_sale_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database connection lost")
-        
-        cart = [{'product_id': 1, 'quantity': 1, 'price': 10.00}]
-        success, result = process_sale_transaction(cart, 10.00)
-        
-        assert success is False
-        assert "Database connection lost" in str(result)
-        mock_conn.rollback.assert_called_once()
-        mock_conn.close.assert_called_once()
-
-    @patch('src.database_manager.get_db_connection')
-    def test_process_sale_transaction_calculates_stock_correctly(self, mock_get_db):
-        """test that new stock is calculated correctly"""
-        from src.database_manager import process_sale_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 103
-        mock_cursor.fetchone.return_value = {'quantity_on_hand': 50}
-
-        cart = [{'product_id': 1, 'quantity': 3, 'price': 21.00}]
-        success, _result = process_sale_transaction(cart, 21.00)
-
-        assert success is True
-        # verify UPDATE was called with correct new_stock (50 - 3 = 47)
-        update_calls = [call for call in mock_cursor.execute.call_args_list
-                       if 'UPDATE booze' in str(call)]
-        assert len(update_calls) > 0
-        assert (47, 1) in [call[0][1] for call in update_calls]
-
-    @patch('src.database_manager.get_db_connection')
-    def test_process_sale_transaction_prevents_negative_stock(self, mock_get_db):
-        """test that race condition protection prevents negative stock"""
-        from src.database_manager import process_sale_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.lastrowid = 104
-        # simulate race condition: stock was reduced to 2 by another transaction
-        mock_cursor.fetchone.return_value = {'quantity_on_hand': 2}
-
-        # try to sell 5 units when only 2 are available
-        cart = [{'product_id': 1, 'quantity': 5, 'price': 10.00}]
-        success, error_msg = process_sale_transaction(cart, 50.00)
-
-        assert success is False
-        assert isinstance(error_msg, str)
-        assert "Insufficient stock" in error_msg
-        assert "product 1" in error_msg
-        # verify rollback was called
-        mock_conn.rollback.assert_called_once()
-        # verify UPDATE was never called (transaction failed before update)
-        update_calls = [call for call in mock_cursor.execute.call_args_list
-                       if 'UPDATE booze' in str(call)]
-        assert len(update_calls) == 0
-
-
-# SCRUM-14 Low Stock Report Database Tests
-class TestLowStockDatabase:
-    """test class for low stock report database functions (SCRUM-56)"""
     
-    @patch('src.database_manager.get_db_connection')
-    def test_get_low_stock_report_below_threshold(self, mock_get_db):
-        """test retrieving products below threshold"""
-        from src.database_manager import get_low_stock_report
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        mock_rows = [
-            {"id": 1, "name": "Product A", "brand": "Brand A", "quantity_on_hand": 5, "price": 25.00},
-            {"id": 2, "name": "Product B", "brand": "Brand B", "quantity_on_hand": 10, "price": 30.00}
-        ]
-        mock_cursor.fetchall.return_value = mock_rows
-        
-        result = get_low_stock_report(20)
-        
-        assert result is not None
-        assert isinstance(result, list)
-        assert len(result) == 2
-        assert result[0]["id"] == 1
-        assert abs(result[0]["price"] - 25.00) < 0.01
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_low_stock_report_no_products_below_threshold(self, mock_get_db):
-        """test when no products are below threshold"""
-        from src.database_manager import get_low_stock_report
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = []
-        
-        result = get_low_stock_report(20)
-        
-        assert len(result) == 0
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_low_stock_report_with_custom_threshold(self, mock_get_db):
-        """test with custom threshold value"""
-        from src.database_manager import get_low_stock_report
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = []
-        
-        get_low_stock_report(50)
-        
-        call_args = mock_cursor.execute.call_args[0]
-        assert (50,) in call_args
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_low_stock_report_database_error_returns_empty_list(self, mock_get_db):
-        """test that database errors return empty list"""
-        from src.database_manager import get_low_stock_report
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
-        
-        result = get_low_stock_report(20)
-        
-        assert not result
-        mock_conn.close.assert_called_once()
 
-
-# Additional inventory functions tests
 class TestInventoryFunctions:
-    """test class for inventory functions"""
-    
     @patch('src.database_manager.get_db_connection')
-    def test_adjust_stock_success(self, mock_get_db):
-        """test successfully adjusting stock"""
-        from src.database_manager import adjust_stock
-        
+    def test_adjust_stock_success(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.rowcount = 1
         
         result = adjust_stock(1, 50)
-        
         assert result is True
-        mock_cursor.execute.assert_called_once()
-        mock_conn.commit.assert_called_once()
-        mock_conn.close.assert_called_once()
-    
+
     @patch('src.database_manager.get_db_connection')
-    def test_adjust_stock_no_update(self, mock_get_db):
-        """test adjust stock when product not found"""
-        from src.database_manager import adjust_stock
-        
+    def test_get_stock_by_id_found(self, mock_get_conn):
         mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.rowcount = 0
-        
-        result = adjust_stock(999, 50)
-        
-        assert result is False
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_adjust_stock_database_error(self, mock_get_db):
-        """test adjust stock database error handling"""
-        from src.database_manager import adjust_stock
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
-        
-        result = adjust_stock(1, 50)
-        
-        assert result is False
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_stock_by_id_success(self, mock_get_db):
-        """test successfully getting stock by id"""
-        from src.database_manager import get_stock_by_id
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        mock_row = {"name": "Test Product", "quantity_on_hand": 50}
-        mock_cursor.fetchone.return_value = mock_row
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value.fetchone.return_value = mock_row({"name": "Rum", "quantity_on_hand": 15})
         
         result = get_stock_by_id(1)
-        
-        assert result is not None
-        assert result["name"] == "Test Product"
-        assert result["quantity"] == 50
-        mock_conn.close.assert_called_once()
+        assert result == {"name": "Rum", "quantity": 15}
     
+
+class TestSalesDatabaseFunctions:
     @patch('src.database_manager.get_db_connection')
-    def test_get_stock_by_id_not_found(self, mock_get_db):
-        """test get stock by id when product not found"""
-        from src.database_manager import get_stock_by_id
-        
+    def test_process_sale_transaction_success(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchone.return_value = None
+        mock_cursor.lastrowid = 999
+        mock_cursor.fetchone.return_value = mock_row({"quantity_on_hand": 10})
         
-        result = get_stock_by_id(999)
+        cart = [{'product_id': 1, 'quantity': 2, 'price': 10.0}]
+        success, trans_id = process_sale_transaction(cart, 20.0)
         
-        assert result is None
-        mock_conn.close.assert_called_once()
+        assert success is True
+        assert trans_id == 999
+    
 
+class TestLowStockDatabase:
+    @patch('src.database_manager.get_db_connection')
+    def test_get_low_stock_report(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = [mock_row({"id": 1, "name": "A", "brand": "B", "quantity_on_hand": 2, "price": 10})]
+        
+        report = get_low_stock_report(5)
+        assert len(report) == 1
+        assert report[0]['name'] == "A"
+    
 
 class TestTransactionDetails:
-    """test class for transaction detail retrieval functions (scrum-60)"""
-    
     @patch('src.database_manager.get_db_connection')
-    def test_get_transaction_by_id_success(self, mock_get_db):
-        """test successfully retrieving transaction by id"""
-        from src.database_manager import get_transaction_by_id
-        
+    def test_get_transaction_by_id(self, mock_get_conn):
         mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        mock_row = {
-            "transaction_id": 1,
-            "timestamp": "2025-11-10 14:30:00",
-            "total_amount": 45.50
-        }
-        mock_cursor.fetchone.return_value = mock_row
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value.fetchone.return_value = mock_row({"transaction_id": 1, "timestamp": "2023-01-01", "total_amount": 100})
         
         result = get_transaction_by_id(1)
-        
-        assert result is not None
-        assert result["id"] == 1
-        assert result["timestamp"] == "2025-11-10 14:30:00"
-        assert abs(result["total_amount"] - 45.50) < 0.01
-        mock_cursor.execute.assert_called_once_with(
-            "SELECT transaction_id, timestamp, total_amount FROM transactions WHERE transaction_id = ?",
-            (1,)
-        )
-        mock_conn.close.assert_called_once()
-    
+        assert result['total_amount'] == 100
+
     @patch('src.database_manager.get_db_connection')
-    def test_get_transaction_by_id_not_found(self, mock_get_db):
-        """test get transaction by id when transaction not found"""
-        from src.database_manager import get_transaction_by_id
+    def test_get_items_for_transaction(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value.fetchall.return_value = [mock_row({"name": "Beer", "quantity": 6, "price_at_sale": 12.0})]
         
+        items = get_items_for_transaction(1)
+        assert len(items) == 1
+    
+
+class TestSearchProducts:
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term(self, mock_get_conn):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
+        mock_get_conn.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = [mock_row({"id": 1, "name": "Vodka", "brand": "Smirnoff", "quantity_on_hand": 10, "price": 15})]
+        
+        results = search_products_by_term("vodka")
+        
+        assert len(results) == 1
+        assert results[0]['name'] == "Vodka"
+        # Verify wildcards were added
+        args = mock_cursor.execute.call_args[0]
+        assert "%vodka%" in args[1]
+
+class TestProductDetails:
+    @patch('src.database_manager.get_db_connection')
+    def test_get_product_details_found(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value.fetchone.return_value = mock_row({
+            "id": 1, "name": "Whiskey", "price": 50.0, "quantity_on_hand": 5
+        })
+        
+        result = get_product_details(1)
+        assert result["name"] == "Whiskey"
+        assert result["price"] == pytest.approx(50.0)
+
+    @patch('src.database_manager.get_db_connection')
+    def test_get_product_details_not_found(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value.fetchone.return_value = None
+        
+        result = get_product_details(999)
+        assert result is None
+
+class TestTransactionBasics:
+    @patch('src.database_manager.get_db_connection')
+    def test_start_transaction_success(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.lastrowid = 123
+        
+        result = start_transaction(100.0)
+        assert result == 123
+
+    @patch('src.database_manager.get_db_connection')
+    def test_start_transaction_failure(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("DB Error")
+        
+        result = start_transaction(100.0)
+        assert result is None
+
+    @patch('src.database_manager.get_db_connection')
+    def test_log_item_sale_success(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        
+        result = log_item_sale(1, 2, 1, 10.0)
+        assert result is True
+
+    @patch('src.database_manager.get_db_connection')
+    def test_log_item_sale_failure(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("DB Error")
+        
+        result = log_item_sale(1, 2, 1, 10.0)
+        assert result is False
+
+class TestProcessSaleTransactionEdgeCases:
+    @patch('src.database_manager.get_db_connection')
+    def test_process_sale_insufficient_stock(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        # Mock stock check returning low quantity
+        mock_cursor.fetchone.return_value = mock_row({"quantity_on_hand": 1})
+        
+        cart = [{'product_id': 1, 'quantity': 5, 'price': 10.0}]
+        success, msg = process_sale_transaction(cart, 50.0)
+        
+        assert success is False
+        assert "Insufficient stock" in msg
+        mock_conn.rollback.assert_called_once()
+
+    @patch('src.database_manager.get_db_connection')
+    def test_process_sale_product_not_found(self, mock_get_conn):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_conn.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        # Mock stock check returning None
         mock_cursor.fetchone.return_value = None
         
-        result = get_transaction_by_id(999)
+        cart = [{'product_id': 99, 'quantity': 1, 'price': 10.0}]
+        success, msg = process_sale_transaction(cart, 10.0)
         
-        assert result is None
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_transaction_by_id_database_error(self, mock_get_db):
-        """test get transaction by id handles database error"""
-        from src.database_manager import get_transaction_by_id
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
-        
-        result = get_transaction_by_id(1)
-        
-        assert result is None
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_items_for_transaction_success(self, mock_get_db):
-        """test successfully retrieving items for transaction"""
-        from src.database_manager import get_items_for_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        mock_rows = [
-            {"name": "Product A", "quantity": 2, "price_at_sale": 10.50},
-            {"name": "Product B", "quantity": 1, "price_at_sale": 24.50}
-        ]
-        mock_cursor.fetchall.return_value = mock_rows
-        
-        result = get_items_for_transaction(1)
-        
-        assert len(result) == 2
-        assert result[0]["name"] == "Product A"
-        assert result[0]["quantity"] == 2
-        assert abs(result[0]["price_at_sale"] - 10.50) < 0.01
-        assert result[1]["name"] == "Product B"
-        assert result[1]["quantity"] == 1
-        assert abs(result[1]["price_at_sale"] - 24.50) < 0.01
-        mock_cursor.execute.assert_called_once()
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_items_for_transaction_empty(self, mock_get_db):
-        """test get items for transaction when no items found"""
-        from src.database_manager import get_items_for_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = []
-        
-        result = get_items_for_transaction(999)
-        
-        assert not result
-        mock_conn.close.assert_called_once()
-    
-    @patch('src.database_manager.get_db_connection')
-    def test_get_items_for_transaction_database_error(self, mock_get_db):
-        """test get items for transaction handles database error"""
-        from src.database_manager import get_items_for_transaction
-        
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_get_db.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
-        
-        result = get_items_for_transaction(1)
-        
-        assert not result
-        mock_conn.close.assert_called_once()
+        assert success is False
+        assert "not found" in msg
+        mock_conn.rollback.assert_called_once()

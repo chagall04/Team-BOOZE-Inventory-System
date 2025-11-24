@@ -399,3 +399,45 @@ def process_sale_transaction(cart_items, total_amount):
         return False, str(e)
     finally:
         conn.close()
+
+def search_products_by_term(search_term):
+    """
+    scrum-67: search for products by name or brand
+    
+    args:
+        search_term: string to search for
+        
+    returns:
+        list of dicts with product info
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Add wildcards for partial matching
+        term_pattern = f"%{search_term}%"
+        
+        cursor.execute(
+            """SELECT id, name, brand, quantity_on_hand, price 
+               FROM booze 
+               WHERE name LIKE ? OR brand LIKE ?
+               ORDER BY name ASC""",
+            (term_pattern, term_pattern)
+        )
+        results = cursor.fetchall()
+        
+        # convert Row objects to dictionaries
+        search_results = []
+        for row in results:
+            search_results.append({
+                "id": row["id"],
+                "name": row["name"],
+                "brand": row["brand"],
+                "quantity": row["quantity_on_hand"],
+                "price": row["price"]
+            })
+        
+        return search_results
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()

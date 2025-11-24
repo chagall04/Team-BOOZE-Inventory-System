@@ -4,7 +4,11 @@
 
 """This module contains the business logic for managing stock levels."""
 
-from .database_manager import get_stock_by_id, adjust_stock
+from .database_manager import get_stock_by_id, adjust_stock, search_products_by_term
+
+#constants
+ENTER_PRODUCT_ID_PROMPT = "Enter Product ID: "
+INVALID_PRODUCT_ID_MSG = "Error: Product ID must be a number."
 
 def receive_new_stock():
     """
@@ -18,9 +22,9 @@ def receive_new_stock():
 
     # SCRUM-30: CLI interface for receiving stock
     try:
-        product_id = int(input("Enter Product ID: "))
+        product_id = int(input(ENTER_PRODUCT_ID_PROMPT))
     except ValueError:
-        print("Error: Product ID must be a number.")
+        print(INVALID_PRODUCT_ID_MSG)
         return False
 
     try:
@@ -66,9 +70,9 @@ def view_current_stock():
 
     # SCRUM-32: Handle product lookup
     try:
-        product_id = int(input("Enter Product ID: "))
+        product_id = int(input(ENTER_PRODUCT_ID_PROMPT))
     except ValueError:
-        print("Error: Product ID must be a number.")
+        print(INVALID_PRODUCT_ID_MSG)
         return False
 
     # SCRUM-29: Get stock data from database
@@ -96,9 +100,9 @@ def log_product_loss():
 
     # SCRUM-48: CLI interface for logging product loss
     try:
-        product_id = int(input("Enter Product ID: "))
+        product_id = int(input(ENTER_PRODUCT_ID_PROMPT))
     except ValueError:
-        print("Error: Product ID must be a number.")
+        print(INVALID_PRODUCT_ID_MSG)
         return False
 
     # SCRUM-49: Reuse get_stock_by_id() to fetch current stock
@@ -141,6 +145,47 @@ def log_product_loss():
     print(f"Previous stock level: {current_stock['quantity']}")
     print(f"Lost: {quantity_lost}")
     print(f"New stock level: {new_stock_level}")
+    return True
+
+def search_products():
+    """
+    Handles logic for SCRUM-66: "As a Store Clerk, I want to search products..."
+    
+    Implementation:
+    - SCRUM-68: Get input and display results
+    """
+    print("\n--- Search Products ---")
+    
+    # Get search term
+    search_term = input("Enter search term (name or brand): ").strip()
+    
+    if len(search_term) == 0:
+        print("Error: Search term cannot be empty.")
+        return False
+
+    # Query database (SCRUM-67)
+    results = search_products_by_term(search_term)
+    
+    # Display results
+    if not results:
+        print(f"\nNo products found matching '{search_term}'.")
+        return True
+        
+    print(f"\nFound {len(results)} matching products:")
+    print("-" * 75)
+    print(f"{'ID':<5} {'Product Name':<25} {'Brand':<15} {'Stock':<8} {'Price':<10}")
+    print("-" * 75)
+    
+    for product in results:
+        p_id = product["id"]
+        name = product["name"][:25]  # truncate for display
+        brand = product["brand"][:15] if product["brand"] else "N/A"
+        qty = product["quantity"]
+        price = product["price"]
+        
+        print(f"{p_id:<5} {name:<25} {brand:<15} {qty:<8} €{price:<9.2f}")
+        
+    print("-" * 75)
     return True
 
 # --- Backlog (Not in Sprint 1) ---
