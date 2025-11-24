@@ -9,10 +9,8 @@ import sqlite3
 from src.database_manager import insert_product, get_db_connection, get_all_products
 
 # Constants for field names
-INITIAL_STOCK_FIELD = "Initial stock"
+INITIAL_STOCK_FIELD_NAME = "Initial stock"
 
-# Constants
-INITIAL_STOCK_FIELD = "Initial stock"
 
 def validate_required_field(field_value, field_name):
     """Validate that a required field is not empty"""
@@ -24,7 +22,7 @@ def get_min_value_error(field_name, min_value, max_value):
     """Get appropriate error message for minimum value validation"""
     if field_name == "Price":
         return [f"{field_name} must be non-negative"]
-    if field_name == INITIAL_STOCK_FIELD:
+    if field_name == INITIAL_STOCK_FIELD_NAME:
         return [f"{field_name} quantity must be non-negative"]
     if field_name == "Volume" and min_value == 1:
         return [f"{field_name} must be greater than 0"]
@@ -32,7 +30,7 @@ def get_min_value_error(field_name, min_value, max_value):
 
 def get_value_error(field_name, convert_func):
     """Get appropriate error message for value conversion errors"""
-    if convert_func == int and field_name == INITIAL_STOCK_FIELD:
+    if convert_func == int and field_name == INITIAL_STOCK_FIELD_NAME:
         return [f"{field_name} must be a valid whole number"]
     return [f"{field_name} must be a valid number"]
 
@@ -64,7 +62,7 @@ def validate_product_data(name, brand, type_, price, quantity, abv=None, volume_
 
     # Quantity validation
     quantity_errors, _ = validate_numeric_value(
-        quantity, INITIAL_STOCK_FIELD, int, min_value=0)
+        quantity, INITIAL_STOCK_FIELD_NAME, int, min_value=0)
     errors.extend(quantity_errors)
 
     # Optional field validation
@@ -325,7 +323,7 @@ def _process_quantity_field(inputs, update_data, errors):
 
 def _process_optional_numeric_field(inputs, update_data, errors, field_key, display_name, conv, min_val, max_val=None):
     """Process and validate optional numeric field."""
-    val, err = _validate_numeric(inputs.get(field_key), display_name, conv, min_value=min_val, max_value=max_val, whole=(conv == int))
+    val, err = _validate_numeric(inputs.get(field_key), display_name, conv, min_value=min_val, max_value=max_val, whole=conv == int)
     if err:
         errors.append(err)
     elif val is not None:

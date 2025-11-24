@@ -4,8 +4,8 @@
 This module provides database operations for users, products, and sales transactions.
 """
 import sqlite3
-import bcrypt
 from datetime import datetime
+import bcrypt
 
 DB_NAME = "inventory.db"
 

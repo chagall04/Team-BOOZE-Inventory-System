@@ -655,7 +655,7 @@ def test_view_last_sale(monkeypatch, capsys):
     import src.sales
     
     # Test case 1: No previous sale
-    src.sales.last_transaction_id = None
+    src.sales.LAST_TRANSACTION_ID = None
     result = view_last_transaction()
     captured = capsys.readouterr()
     
@@ -663,11 +663,11 @@ def test_view_last_sale(monkeypatch, capsys):
     assert "No previous sale found" in captured.out
     
     # Test case 2: After completing a sale, verify correct transaction is displayed
-    # First, simulate a completed sale by setting last_transaction_id
+    # First, simulate a completed sale by setting LAST_TRANSACTION_ID
     # In a real scenario, this would be set by record_sale()
     
     # Mock a transaction ID (assuming transaction 1 exists in test database)
-    src.sales.last_transaction_id = 1
+    src.sales.LAST_TRANSACTION_ID = 1
     
     # Call view_last_transaction
     result = view_last_transaction()
@@ -695,7 +695,7 @@ def test_view_last_sale(monkeypatch, capsys):
     
     # Test case 3: Verify it shows the LAST transaction after multiple sales
     # Simulate completing another sale
-    src.sales.last_transaction_id = 2
+    src.sales.LAST_TRANSACTION_ID = 2
     
     result = view_last_transaction()
     captured = capsys.readouterr()
@@ -732,8 +732,8 @@ def test_view_last_sale_integration(monkeypatch, capsys):
     # Clear captured output from record_sale
     capsys.readouterr()
     
-    # Verify last_transaction_id was set
-    assert src.sales.last_transaction_id is not None
+    # Verify LAST_TRANSACTION_ID was set
+    assert src.sales.LAST_TRANSACTION_ID is not None
     
     # Now view the last transaction
     result = view_last_transaction()
@@ -741,7 +741,7 @@ def test_view_last_sale_integration(monkeypatch, capsys):
     
     assert result is True
     assert "LAST TRANSACTION RECEIPT" in captured.out
-    assert f"Transaction ID: {src.sales.last_transaction_id}" in captured.out
+    assert f"Transaction ID: {src.sales.LAST_TRANSACTION_ID}" in captured.out
 
 
 def test_view_last_sale_error_handling(monkeypatch, capsys):
@@ -752,7 +752,7 @@ def test_view_last_sale_error_handling(monkeypatch, capsys):
     import src.sales
     
     # Set a transaction ID that should exist
-    src.sales.last_transaction_id = 999
+    src.sales.LAST_TRANSACTION_ID = 999
     
     # Mock get_transaction_by_id to return None (simulating data corruption)
     with patch('src.sales.get_transaction_by_id', return_value=None):
@@ -770,4 +770,3 @@ def test_view_last_sale_error_handling(monkeypatch, capsys):
             
             assert result is False
             assert "Error: No items found for last transaction" in captured.out
-
