@@ -6,7 +6,7 @@
 and viewing products in the 'booze' table."""
 
 import sqlite3
-from src.database_manager import insert_product
+from src.database_manager import insert_product, get_db_connection
 
 # Constants for field names
 INITIAL_STOCK_FIELD = "Initial stock"
@@ -150,7 +150,7 @@ def lookup_product_by_id(product_id):
             - result: Dict with product data if found, error message if not
     """
     try:
-        conn = sqlite3.connect('inventory.db')
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Query the database for the product
