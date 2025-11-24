@@ -504,3 +504,28 @@ def update_product_details(product_id, data):
 def update_product(product_id, data):
     """Alias for update_product_details for backward compatibility"""
     return update_product_details(product_id, data)
+
+
+def get_total_inventory_value():
+    """
+    calculate total inventory value by multiplying price by stock for all products
+    
+    returns:
+        float: total value of all products in stock (price * quantity_on_hand)
+               returns 0.00 if database is empty or result is NULL
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT SUM(price * quantity_on_hand) FROM booze")
+        result = cursor.fetchone()
+        
+        # handle NULL result (empty database or all products have NULL price/quantity)
+        if result is None or result[0] is None:
+            return 0.00
+        
+        return float(result[0])
+    except sqlite3.Error:
+        return 0.00
+    finally:
+        conn.close()

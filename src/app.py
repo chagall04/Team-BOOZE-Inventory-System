@@ -8,7 +8,7 @@ from .auth import login, create_account, delete_account
 from .product_management import add_new_product
 from .sales import record_sale, view_transaction_details
 from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
-from .reporting import generate_low_stock_report
+from .reporting import generate_low_stock_report, view_total_inventory_value
 
 # menu constants
 ENTER_CHOICE_PROMPT = "Enter choice: "
@@ -70,6 +70,7 @@ def show_manager_menu():
         print("[2] View Inventory Report (Reporting & Analytics)")
         print("[3] View Sales History (Sales Management)")
         print("[4] View Transaction Details (Sales Management)")
+        print("[5] View Total Inventory Value (Reporting & Analytics)")
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -92,6 +93,9 @@ def show_manager_menu():
         elif choice == '4':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
+        elif choice == '5':
+            # view total inventory value report
+            view_total_inventory_value()
         elif choice == '0':
             print("Logging out...")
             break

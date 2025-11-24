@@ -5,7 +5,7 @@
 """Tests for reporting functionality including low stock reports."""
 
 from unittest.mock import patch
-from src.reporting import generate_low_stock_report
+from src.reporting import generate_low_stock_report, format_currency, view_total_inventory_value
 
 
 class TestLowStockReport:
@@ -263,3 +263,182 @@ class TestLowStockReport:
         # verify price is formatted with euro symbol
         assert "€" in report
         assert "99.99" in report
+
+
+# Format Currency Tests
+class TestFormatCurrency:
+    """test class for format_currency utility function"""
+    
+    def test_format_currency_basic_value(self):
+        """test formatting a basic decimal value"""
+        result = format_currency(1250.00)
+        
+        assert result == "€1,250.00"
+    
+    def test_format_currency_zero(self):
+        """test formatting zero value"""
+        result = format_currency(0.00)
+        
+        assert result == "€0.00"
+    
+    def test_format_currency_small_value(self):
+        """test formatting small decimal value"""
+        result = format_currency(5.99)
+        
+        assert result == "€5.99"
+    
+    def test_format_currency_large_value(self):
+        """test formatting large value with thousands separator"""
+        result = format_currency(123456.78)
+        
+        assert result == "€123,456.78"
+    
+    def test_format_currency_integer_value(self):
+        """test formatting integer value (should show .00)"""
+        result = format_currency(100)
+        
+        assert result == "€100.00"
+    
+    def test_format_currency_rounds_to_two_decimals(self):
+        """test that value is formatted with exactly two decimal places"""
+        result = format_currency(99.999)
+        
+        # should round to 2 decimals
+        assert result == "€100.00"
+    
+    def test_format_currency_handles_float(self):
+        """test formatting float value"""
+        result = format_currency(45.5)
+        
+        assert result == "€45.50"
+    
+    def test_format_currency_very_large_value(self):
+        """test formatting very large value"""
+        result = format_currency(9999999.99)
+        
+        assert result == "€9,999,999.99"
+    
+    def test_format_currency_one_cent(self):
+        """test formatting very small value"""
+        result = format_currency(0.01)
+        
+        assert result == "€0.01"
+    
+    def test_format_currency_has_euro_symbol(self):
+        """test that all formatted values have euro symbol"""
+        result = format_currency(100.00)
+        
+        assert result.startswith("€")
+    
+    def test_format_currency_negative_value(self):
+        """test formatting negative value"""
+        result = format_currency(-50.00)
+        
+        assert result == "€-50.00"
+
+
+# View Total Inventory Value Tests
+class TestViewTotalInventoryValue:
+    """test class for view_total_inventory_value report function"""
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_displays_report(self, mock_print, mock_get_total):
+        """test that report is displayed to user"""
+        mock_get_total.return_value = 5000.00
+        
+        view_total_inventory_value()
+        
+        # verify print was called
+        assert mock_print.call_count > 0
+        mock_get_total.assert_called_once()
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_shows_formatted_value(self, mock_print, mock_get_total):
+        """test that formatted currency value is in report"""
+        mock_get_total.return_value = 1250.00
+        
+        view_total_inventory_value()
+        
+        # get the printed output
+        printed_output = ""
+        for call in mock_print.call_args_list:
+            printed_output += str(call[0][0]) if call[0] else ""
+        
+        assert "€1,250.00" in printed_output
+        assert "TOTAL INVENTORY VALUE REPORT" in printed_output
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_empty_database(self, mock_print, mock_get_total):
+        """test report when database is empty"""
+        mock_get_total.return_value = 0.00
+        
+        view_total_inventory_value()
+        
+        # get the printed output
+        printed_output = ""
+        for call in mock_print.call_args_list:
+            printed_output += str(call[0][0]) if call[0] else ""
+        
+        assert "€0.00" in printed_output
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_large_value(self, mock_print, mock_get_total):
+        """test report with large inventory value"""
+        mock_get_total.return_value = 999999.99
+        
+        view_total_inventory_value()
+        
+        # get the printed output
+        printed_output = ""
+        for call in mock_print.call_args_list:
+            printed_output += str(call[0][0]) if call[0] else ""
+        
+        assert "€999,999.99" in printed_output
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_report_format(self, mock_print, mock_get_total):
+        """test that report has proper formatting with headers and dividers"""
+        mock_get_total.return_value = 2500.50
+        
+        view_total_inventory_value()
+        
+        # get the printed output
+        printed_output = ""
+        for call in mock_print.call_args_list:
+            printed_output += str(call[0][0]) if call[0] else ""
+        
+        # verify report structure
+        assert "=" * 70 in printed_output
+        assert "TOTAL INVENTORY VALUE REPORT" in printed_output
+        assert "Total value of all products in stock:" in printed_output
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_calls_database(self, mock_print, mock_get_total):
+        """test that function calls database to get total value"""
+        mock_get_total.return_value = 3000.00
+        
+        view_total_inventory_value()
+        
+        mock_get_total.assert_called_once()
+    
+    @patch('src.reporting.get_total_inventory_value')
+    @patch('builtins.print')
+    def test_view_total_inventory_value_decimal_precision(self, mock_print, mock_get_total):
+        """test that decimal values are displayed correctly"""
+        mock_get_total.return_value = 1234.56
+        
+        view_total_inventory_value()
+        
+        # get the printed output
+        printed_output = ""
+        for call in mock_print.call_args_list:
+            printed_output += str(call[0][0]) if call[0] else ""
+        
+        assert "€1,234.56" in printed_output
+

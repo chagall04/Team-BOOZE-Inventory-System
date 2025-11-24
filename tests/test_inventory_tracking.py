@@ -211,6 +211,19 @@ def test_log_product_loss_negative_quantity(mock_input):
     assert current is not None
     assert current['quantity'] == 50
 
+@patch('builtins.input', side_effect=['1', 'abc'])
+def test_log_product_loss_invalid_quantity_value_error(mock_input):
+    """SCRUM-48: Test handling non-numeric quantity input"""
+    from src.inventory_tracking import log_product_loss
+    
+    result = log_product_loss()
+    assert result is False
+    
+    # Verify stock wasn't changed
+    current = get_stock_by_id(1)
+    assert current is not None
+    assert current['quantity'] == 50
+
 @patch('builtins.input', side_effect=['1', '0'])
 def test_log_product_loss_zero_quantity(mock_input):
     """SCRUM-48: Test handling zero quantity input"""

@@ -230,6 +230,18 @@ class TestManagerMenu:
         
         mock_input.assert_called()
     
+    @patch('src.app.view_total_inventory_value')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_manager_menu_view_total_inventory_value(self, mock_print, mock_input, mock_view_total):
+        """test manager can access total inventory value report"""
+        mock_input.side_effect = ["5", "0"]
+        
+        show_manager_menu()
+        
+        mock_view_total.assert_called_once()
+        mock_input.assert_called()
+    
     @patch('builtins.input')
     @patch('builtins.print')
     def test_manager_menu_invalid_choice(self, mock_print, mock_input):
