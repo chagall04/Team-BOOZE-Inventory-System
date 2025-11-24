@@ -268,7 +268,7 @@ def _process_required_fields(inputs, update_data, errors):
         if err:
             errors.append(err)
         elif val is not None:
-            update_data['type' if key == 'type' else key] = val
+            update_data[key] = val
 
 
 def _process_price_field(inputs, update_data, errors):
