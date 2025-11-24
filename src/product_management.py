@@ -295,7 +295,7 @@ def _process_optional_numeric_field(inputs, update_data, errors, field_key, disp
     if err:
         errors.append(err)
     elif field_key in inputs:
-        if inputs[field_key] == "":
+        if inputs[field_key] is None:
             update_data[field_key] = None
         elif val is not None:
             update_data[field_key] = val
