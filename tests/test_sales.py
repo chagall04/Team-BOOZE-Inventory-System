@@ -638,3 +638,138 @@ class TestViewTransactionDetails:
         assert result is True
         mock_get_txn.assert_called_once_with(5)
         mock_get_items.assert_called_once_with(5)
+
+
+
+def test_view_last_sale(monkeypatch, capsys):
+    """
+    SCRUM-75: Test that view_last_transaction() displays the correct transaction
+    
+    Acceptance Criteria:
+    - After completing a sale, view_last_transaction() should display the most recent transaction
+    - The receipt should show correct transaction ID, items, quantities, prices, and total
+    - Should handle case when no previous sale exists
+    """
+    from src.sales import view_last_transaction, record_sale
+    from src.sales import last_transaction_id
+    from src.database_manager import get_transaction_by_id, get_items_for_transaction
+    import src.sales
+    
+    # Test case 1: No previous sale
+    src.sales.last_transaction_id = None
+    result = view_last_transaction()
+    captured = capsys.readouterr()
+    
+    assert result is False
+    assert "No previous sale found" in captured.out
+    
+    # Test case 2: After completing a sale, verify correct transaction is displayed
+    # First, simulate a completed sale by setting last_transaction_id
+    # In a real scenario, this would be set by record_sale()
+    
+    # Mock a transaction ID (assuming transaction 1 exists in test database)
+    src.sales.last_transaction_id = 1
+    
+    # Call view_last_transaction
+    result = view_last_transaction()
+    captured = capsys.readouterr()
+    
+    # Verify the function returns True for successful display
+    assert result is True
+    
+    # Verify receipt header is displayed
+    assert "LAST TRANSACTION RECEIPT" in captured.out
+    assert "Transaction ID: 1" in captured.out
+    
+    # Verify transaction details are shown
+    transaction = get_transaction_by_id(1)
+    assert transaction is not None
+    assert f"€{transaction['total_amount']:.2f}" in captured.out
+    
+    # Verify items are displayed correctly
+    items = get_items_for_transaction(1)
+    assert items is not None and len(items) > 0
+    
+    for item in items:
+        assert item['name'] in captured.out
+        assert str(item['quantity']) in captured.out
+    
+    # Test case 3: Verify it shows the LAST transaction after multiple sales
+    # Simulate completing another sale
+    src.sales.last_transaction_id = 2
+    
+    result = view_last_transaction()
+    captured = capsys.readouterr()
+    
+    assert result is True
+    assert "Transaction ID: 2" in captured.out
+    # Should show transaction 2, not transaction 1
+    assert "Transaction ID: 1" not in captured.out
+
+
+def test_view_last_sale_integration(monkeypatch, capsys):
+    """
+    SCRUM-75: Integration test that verifies view_last_transaction() 
+    works correctly after record_sale() completes a transaction
+    """
+    from src.sales import view_last_transaction, record_sale
+    import src.sales
+    
+    # Simulate a complete sale workflow
+    inputs = iter([
+        '1',  # Add item to cart
+        '1',  # Product ID
+        '2',  # Quantity
+        '3',  # Complete sale
+        'y'   # Confirm sale
+    ])
+    
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    
+    # Record a sale
+    result = record_sale()
+    assert result is True
+    
+    # Clear captured output from record_sale
+    capsys.readouterr()
+    
+    # Verify last_transaction_id was set
+    assert src.sales.last_transaction_id is not None
+    
+    # Now view the last transaction
+    result = view_last_transaction()
+    captured = capsys.readouterr()
+    
+    assert result is True
+    assert "LAST TRANSACTION RECEIPT" in captured.out
+    assert f"Transaction ID: {src.sales.last_transaction_id}" in captured.out
+
+
+def test_view_last_sale_error_handling(monkeypatch, capsys):
+    """
+    SCRUM-75: Test error handling when transaction data is corrupted or missing
+    """
+    from src.sales import view_last_transaction
+    from unittest.mock import patch
+    import src.sales
+    
+    # Set a transaction ID that should exist
+    src.sales.last_transaction_id = 999
+    
+    # Mock get_transaction_by_id to return None (simulating data corruption)
+    with patch('src.sales.get_transaction_by_id', return_value=None):
+        result = view_last_transaction()
+        captured = capsys.readouterr()
+        
+        assert result is False
+        assert "Error: Last transaction could not be retrieved" in captured.out
+    
+    # Mock get_items_for_transaction to return empty list (simulating missing items)
+    with patch('src.sales.get_transaction_by_id', return_value={'id': 999, 'total_amount': 50.0, 'timestamp': '2025-11-24'}):
+        with patch('src.sales.get_items_for_transaction', return_value=[]):
+            result = view_last_transaction()
+            captured = capsys.readouterr()
+            
+            assert result is False
+            assert "Error: No items found for last transaction" in captured.out
+
