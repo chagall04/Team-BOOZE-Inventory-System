@@ -285,8 +285,6 @@ def view_last_transaction():
     """
     scrum-73: view receipt for the most recent completed sale
     """
-    global last_transaction_id
-
     print("\n=== View Last Sale ===")
 
     if last_transaction_id is None:

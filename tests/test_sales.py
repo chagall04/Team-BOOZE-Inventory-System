@@ -650,8 +650,7 @@ def test_view_last_sale(monkeypatch, capsys):
     - The receipt should show correct transaction ID, items, quantities, prices, and total
     - Should handle case when no previous sale exists
     """
-    from src.sales import view_last_transaction, record_sale
-    from src.sales import last_transaction_id
+    from src.sales import view_last_transaction
     from src.database_manager import get_transaction_by_id, get_items_for_transaction
     import src.sales
     
@@ -712,7 +711,7 @@ def test_view_last_sale_integration(monkeypatch, capsys):
     SCRUM-75: Integration test that verifies view_last_transaction() 
     works correctly after record_sale() completes a transaction
     """
-    from src.sales import view_last_transaction, record_sale
+    from src.sales import view_last_transaction
     import src.sales
     
     # Simulate a complete sale workflow
@@ -750,7 +749,6 @@ def test_view_last_sale_error_handling(monkeypatch, capsys):
     SCRUM-75: Test error handling when transaction data is corrupted or missing
     """
     from src.sales import view_last_transaction
-    from unittest.mock import patch
     import src.sales
     
     # Set a transaction ID that should exist
