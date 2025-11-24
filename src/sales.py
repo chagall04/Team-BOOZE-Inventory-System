@@ -299,7 +299,7 @@ def view_transaction_details():
 
 def view_last_transaction():
     """
-    scrum-73: view receipt for the most recent completed sale
+    scrum-71: view receipt for the most recent completed sale
     """
     print("\n=== View Last Sale ===")
 
