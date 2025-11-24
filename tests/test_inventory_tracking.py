@@ -205,6 +205,15 @@ def test_log_product_loss_negative_quantity(mock_input):
     
     result = log_product_loss()
     assert result is False
+
+@patch('builtins.input', side_effect=['1', 'abc'])
+def test_log_product_loss_invalid_quantity_value_error(mock_input):
+    """SCRUM-48: Test handling non-numeric quantity input"""
+    from src.inventory_tracking import log_product_loss
+    
+    result = log_product_loss()
+    assert result is False
+
     
     # Verify stock wasn't changed
     current = get_stock_by_id(1)

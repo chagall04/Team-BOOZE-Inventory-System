@@ -1094,3 +1094,40 @@ def test_view_all_products_price_formatting(capsys, monkeypatch):
     # Verify price formatting
     assert "€10.50" in captured.out
     assert "€99.99" in captured.out
+
+
+# Tests for internal helper functions to achieve 100% coverage
+class TestValidationHelpers:
+    """test class for internal validation helper functions"""
+    
+    def test_validate_required_str_with_none_input(self):
+        """test _validate_required_str returns None for None input"""
+        from src.product_management import _validate_required_str
+        
+        value, error = _validate_required_str(None, "Test Field")
+        
+        assert value is None
+        assert error is None
+    
+    def test_validate_numeric_with_empty_string(self):
+        """test _validate_numeric returns None for empty string"""
+        from src.product_management import _validate_numeric
+        
+        value, error = _validate_numeric("", "Test Field", float)
+        
+        assert value is None
+        assert error is None
+    
+    def test_process_required_fields_with_error(self):
+        """test _process_required_fields handles validation errors"""
+        from src.product_management import _process_required_fields
+        
+        inputs = {"name": "", "brand": "Test", "type": "Beer"}
+        update_data = {}
+        errors = []
+        
+        _process_required_fields(inputs, update_data, errors)
+        
+        assert len(errors) > 0
+        assert any("Product name" in err for err in errors)
+

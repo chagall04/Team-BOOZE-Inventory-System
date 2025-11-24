@@ -6,6 +6,10 @@
 
 from .database_manager import get_stock_by_id, adjust_stock
 
+# Constants for user prompts
+PROMPT_PRODUCT_ID = "Enter Product ID: "
+ERROR_PRODUCT_ID_NOT_NUMBER = "Error: Product ID must be a number."
+
 def receive_new_stock():
     """
     Handles the logic for SCRUM-9: "As a Store Clerk, I want to receive new
@@ -18,9 +22,9 @@ def receive_new_stock():
 
     # SCRUM-30: CLI interface for receiving stock
     try:
-        product_id = int(input("Enter Product ID: "))
+        product_id = int(input(PROMPT_PRODUCT_ID))
     except ValueError:
-        print("Error: Product ID must be a number.")
+        print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
 
     try:
@@ -66,9 +70,9 @@ def view_current_stock():
 
     # SCRUM-32: Handle product lookup
     try:
-        product_id = int(input("Enter Product ID: "))
+        product_id = int(input(PROMPT_PRODUCT_ID))
     except ValueError:
-        print("Error: Product ID must be a number.")
+        print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
 
     # SCRUM-29: Get stock data from database
@@ -96,9 +100,9 @@ def log_product_loss():
 
     # SCRUM-48: CLI interface for logging product loss
     try:
-        product_id = int(input("Enter Product ID: "))
+        product_id = int(input(PROMPT_PRODUCT_ID))
     except ValueError:
-        print("Error: Product ID must be a number.")
+        print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
 
     # SCRUM-49: Reuse get_stock_by_id() to fetch current stock
