@@ -143,6 +143,10 @@ def view_all_products():
     
     Shows a clear, paginated list with key details:
     - ID, name, price, current stock
+
+    Returns:
+        True if products are displayed successfully.
+        None if the inventory is empty.
     """
     print("\n=== All Products ===")
     
