@@ -4,8 +4,8 @@
 This module provides database operations for users, products, and sales transactions.
 """
 import sqlite3
-from datetime import datetime
 import bcrypt
+from datetime import datetime
 
 DB_NAME = "inventory.db"
 
@@ -249,6 +249,49 @@ def get_low_stock_report(threshold):
     finally:
         conn.close()
 
+def get_all_products():
+    """
+    scrum-45: retrieve all products from inventory
+    
+    returns:
+        list of dicts with complete product info
+        each dict contains: id, name, brand, type, abv, volume_ml, 
+                           origin_country, price, quantity_on_hand, description
+        returns empty list on error
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT id, name, brand, type, abv, volume_ml, origin_country, 
+                      price, quantity_on_hand, description 
+               FROM booze 
+               ORDER BY name ASC"""
+        )
+        results = cursor.fetchall()
+
+        # convert Row objects to dictionaries
+        products = []
+        for row in results:
+            products.append({
+                "id": row["id"],
+                "name": row["name"],
+                "brand": row["brand"],
+                "type": row["type"],
+                "abv": row["abv"],
+                "volume_ml": row["volume_ml"],
+                "origin_country": row["origin_country"],
+                "price": row["price"],
+                "quantity_on_hand": row["quantity_on_hand"],
+                "description": row["description"]
+            })
+
+        return products
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()
+
 
 # transaction detail functions (scrum-60)
 def get_transaction_by_id(transaction_id):
@@ -397,5 +440,92 @@ def process_sale_transaction(cart_items, total_amount):
         # rollback all changes if anything failed
         conn.rollback()
         return False, str(e)
+    finally:
+        conn.close()
+
+
+
+def update_product_details(product_id, data):
+    """Update existing product details in the database
+    
+    Args:
+        product_id (int): ID of the product to update
+        data (dict): Dictionary containing fields to update. Valid keys are:
+            - name (str)
+            - brand (str)
+            - type (str)
+            - abv (float)
+            - volume_ml (int)
+            - origin_country (str)
+            - price (float)
+            - quantity_on_hand (int)
+            - description (str)
+            
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Build update query dynamically based on provided fields
+    valid_fields = [
+        'name', 'brand', 'type', 'abv', 'volume_ml',
+        'origin_country', 'price', 'quantity_on_hand', 'description'
+    ]
+    
+    # Filter out invalid fields, but keep None values to allow clearing optional fields
+    update_data = {k: v for k, v in data.items() if k in valid_fields}
+    
+    if not update_data:
+        conn.close()
+        return False, "No valid fields to update"
+    
+    try:
+        # Construct UPDATE query
+        set_clause = ", ".join(f"{field} = ?" for field in update_data.keys())
+        query = f"UPDATE booze SET {set_clause} WHERE id = ?"
+        
+        # Execute query with values
+        values = list(update_data.values()) + [product_id]
+        cursor.execute(query, values)
+        
+        if cursor.rowcount == 0:
+            return False, "Product not found"
+            
+        conn.commit()
+        return True, "Product updated successfully"
+        
+    except sqlite3.Error as e:
+        return False, f"Database error: {str(e)}"
+    finally:
+        conn.close()
+
+
+def update_product(product_id, data):
+    """Alias for update_product_details for backward compatibility"""
+    return update_product_details(product_id, data)
+
+
+def get_total_inventory_value():
+    """
+    calculate total inventory value by multiplying price by stock for all products
+    
+    returns:
+        float: total value of all products in stock (price * quantity_on_hand)
+               returns 0.00 if database is empty or result is NULL
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT SUM(price * quantity_on_hand) FROM booze")
+        result = cursor.fetchone()
+        
+        # handle NULL result (empty database or all products have NULL price/quantity)
+        if result is None or result[0] is None:
+            return 0.00
+        
+        return float(result[0])
+    except sqlite3.Error:
+        return 0.00
     finally:
         conn.close()

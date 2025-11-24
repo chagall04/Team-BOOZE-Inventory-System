@@ -177,54 +177,67 @@ def test_view_current_stock_product_not_found(mock_get_stock, mock_input, capsys
     captured = capsys.readouterr()
     assert "Error: Product with ID 999 not found" in captured.out
 
-    @patch('builtins.input', side_effect=['1', '20'])
-    def test_log_product_loss_success(mock_input):
-        """SCRUM-51 & SCRUM-48: Test successful product loss logging"""
-        from src.inventory_tracking import log_product_loss
+@patch('builtins.input', side_effect=['1', '20'])
+def test_log_product_loss_success(mock_input):
+    """SCRUM-51 & SCRUM-48: Test successful product loss logging"""
+    from src.inventory_tracking import log_product_loss
     
-        result = log_product_loss()
-        assert result is True
+    result = log_product_loss()
+    assert result is True
     
-        # Verify final stock level decreased correctly
-        updated = get_stock_by_id(1)
-        assert updated is not None
-        assert updated['quantity'] == 30  # 50 - 20
+    # Verify final stock level decreased correctly
+    updated = get_stock_by_id(1)
+    assert updated is not None
+    assert updated['quantity'] == 30  # 50 - 20
 
-    @patch('builtins.input', side_effect=['abc', '20'])
-    def test_log_product_loss_invalid_id(mock_input):
-        """SCRUM-48: Test handling invalid product ID input"""
-        from src.inventory_tracking import log_product_loss
+@patch('builtins.input', side_effect=['abc', '20'])
+def test_log_product_loss_invalid_id(mock_input):
+    """SCRUM-48: Test handling invalid product ID input"""
+    from src.inventory_tracking import log_product_loss
     
-        result = log_product_loss()
-        assert result is False
+    result = log_product_loss()
+    assert result is False
 
-    @patch('builtins.input', side_effect=['1', '-5'])
-    def test_log_product_loss_negative_quantity(mock_input):
-        """SCRUM-48: Test handling negative quantity input"""
-        from src.inventory_tracking import log_product_loss
+@patch('builtins.input', side_effect=['1', '-5'])
+def test_log_product_loss_negative_quantity(mock_input):
+    """SCRUM-48: Test handling negative quantity input"""
+    from src.inventory_tracking import log_product_loss
     
-        result = log_product_loss()
-        assert result is False
+    result = log_product_loss()
+    assert result is False
     
-        # Verify stock wasn't changed
-        current = get_stock_by_id(1)
-        assert current is not None
-        assert current['quantity'] == 50
+    # Verify stock wasn't changed
+    current = get_stock_by_id(1)
+    assert current is not None
+    assert current['quantity'] == 50
 
-    @patch('builtins.input', side_effect=['1', '0'])
-    def test_log_product_loss_zero_quantity(mock_input):
-        """SCRUM-48: Test handling zero quantity input"""
-        from src.inventory_tracking import log_product_loss
+@patch('builtins.input', side_effect=['1', 'abc'])
+def test_log_product_loss_invalid_quantity_value_error(mock_input):
+    """SCRUM-48: Test handling non-numeric quantity input"""
+    from src.inventory_tracking import log_product_loss
     
-        result = log_product_loss()
-        assert result is False
+    result = log_product_loss()
+    assert result is False
     
-        # Verify stock wasn't changed
-        current = get_stock_by_id(1)
-        assert current is not None
-        assert current['quantity'] == 50
+    # Verify stock wasn't changed
+    current = get_stock_by_id(1)
+    assert current is not None
+    assert current['quantity'] == 50
 
-    @patch('builtins.input', side_effect=['999', '10'])
+@patch('builtins.input', side_effect=['1', '0'])
+def test_log_product_loss_zero_quantity(mock_input):
+    """SCRUM-48: Test handling zero quantity input"""
+    from src.inventory_tracking import log_product_loss
+    
+    result = log_product_loss()
+    assert result is False
+    
+    # Verify stock wasn't changed
+    current = get_stock_by_id(1)
+    assert current is not None
+    assert current['quantity'] == 50
+
+@patch('builtins.input', side_effect=['999', '10'])
 @patch('src.database_manager.get_stock_by_id')
 def test_log_product_loss_nonexistent_product(mock_get_stock, mock_input):
     """SCRUM-48: Test handling nonexistent product"""

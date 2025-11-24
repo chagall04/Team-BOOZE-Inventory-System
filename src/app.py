@@ -6,9 +6,9 @@ This module handles the user interface and menu navigation.
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
-from .sales import record_sale, view_transaction_details, view_last_transaction  # scrum-74: added view_last_transaction
-from .inventory_tracking import receive_new_stock, view_current_stock
-from .reporting import generate_low_stock_report
+from .sales import record_sale, view_transaction_details
+from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
+from .reporting import generate_low_stock_report, view_total_inventory_value
 
 # menu constants
 ENTER_CHOICE_PROMPT = "Enter choice: "
@@ -71,6 +71,7 @@ def show_manager_menu():
         print("[2] View Inventory Report (Reporting & Analytics)")
         print("[3] View Sales History (Sales Management)")
         print("[4] View Transaction Details (Sales Management)")
+        print("[5] View Total Inventory Value (Reporting & Analytics)")
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -93,6 +94,9 @@ def show_manager_menu():
         elif choice == '4':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
+        elif choice == '5':
+            # view total inventory value report
+            view_total_inventory_value()
         elif choice == '0':
             print("Logging out...")
             break
@@ -107,8 +111,8 @@ def show_clerk_menu():
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
         print("[3] View Product Stock (Inventory Tracking)")
-        print("[4] View Transaction Details (Sales Management)")
-        print("[5] View Last Sale (Sales Management)")  # scrum-74: added menu option
+        print("[4] Log Product Loss (Inventory Tracking)")
+        print("[5] View Transaction Details (Sales Management)")
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -119,6 +123,9 @@ def show_clerk_menu():
         elif choice == '3':
             view_current_stock()
         elif choice == '4':
+            # scrum-51 & scrum-48: log product loss (SCRUM-10)
+            log_product_loss()
+        elif choice == '5':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
         elif choice == '5':
