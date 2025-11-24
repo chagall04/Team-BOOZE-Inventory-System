@@ -654,10 +654,10 @@ class TestUpdateProductCli:
         call_args = mock_update.call_args[0]
         update_data = call_args[1]
         assert update_data.get('price') == pytest.approx(6.99, rel=1e-6)
-        assert update_data.get('abv') is None
-        assert update_data.get('volume_ml') is None
-        assert update_data.get('origin_country') is None
-        assert update_data.get('description') is None
+        assert 'abv' in update_data and update_data['abv'] is None
+        assert 'volume_ml' in update_data and update_data['volume_ml'] is None
+        assert 'origin_country' in update_data and update_data['origin_country'] is None
+        assert 'description' in update_data and update_data['description'] is None
     
     @patch('src.product_management.lookup_product_by_id')
     @patch('builtins.input')
