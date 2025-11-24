@@ -119,6 +119,9 @@ def show_clerk_menu():
         elif choice == '3':
             view_current_stock()
         elif choice == '4':
+            # scrum-51 & scrum-48: log product loss (SCRUM-10)
+            log_product_loss()
+        elif choice == '5':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
         elif choice == '5':
