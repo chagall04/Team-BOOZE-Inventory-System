@@ -253,7 +253,15 @@ def print_receipt(transaction, items, title="TRANSACTION RECEIPT"):
 
 def view_transaction_details():
     """
-    scrum-63: view detailed receipt for a specific transaction ID
+    scrum-63: View detailed receipt for a specific transaction ID.
+
+    Prompts the user to enter a transaction ID, validates the input,
+    retrieves the transaction and its items from the database, and prints
+    a formatted receipt to the console.
+
+    Returns:
+        True if the transaction details were successfully displayed,
+        False if there was an error (e.g., invalid input, transaction not found).
     """
     print("\n=== View Transaction Details ===")
     
