@@ -304,7 +304,7 @@ def _process_optional_numeric_field(inputs, update_data, errors, field_key, disp
 def _process_optional_text_field(inputs, update_data, field_key):
     """Process and validate optional text field."""
     val, _ = _validate_optional_str(inputs.get(field_key))
-    if val is not None or (field_key in inputs and inputs[field_key] == ""):
+    if val is not None or (field_key in inputs and inputs[field_key] is None):
         update_data[field_key] = val
 
 
