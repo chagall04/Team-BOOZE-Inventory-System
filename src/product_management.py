@@ -5,7 +5,7 @@
 """This module contains the business logic for adding, updating,
 and viewing products in the 'booze' table."""
 
-from src.database_manager import insert_product
+from src.database_manager import insert_product, get_all_products
 
 # Constants
 INITIAL_STOCK_FIELD = "Initial stock"
@@ -134,6 +134,34 @@ def add_new_product():
     print(f"\nError: Failed to add product - {result}")
     return False
 
+
+def view_all_products():
+    """
+    SCRUM-46: Display all products in inventory
+    
+    Shows a clear, paginated list with key details:
+    - ID, name, price, current stock
+    """
+    print("\n=== All Products ===")
+    
+    products = get_all_products()
+    
+    if not products:
+        print("No products found in inventory.")
+        return
+    
+    # Display header
+    print(f"\n{'ID':<5} {'Name':<30} {'Brand':<20} {'Price (€)':<12} {'Stock':<8}")
+    print("-" * 80)
+    
+    # Display each product
+    for product in products:
+        price_formatted = f"€{product['price']:.2f}"
+        print(f"{product['id']:<5} {product['name']:<30} {product['brand']:<20} "
+              f"{price_formatted:<12} {product['quantity_on_hand']:<8}")
+    
+    print(f"\nTotal products: {len(products)}")
+    return True
 # --- Backlog (Not in Sprint 1) ---
 # SCRUM-6 (Update Product) and SCRUM-7 (View All Products)
 # will be implemented here in a future sprint.

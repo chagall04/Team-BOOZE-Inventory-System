@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 import pytest
-from src.product_management import add_new_product, validate_product_data
+from src.product_management import add_new_product, validate_product_data, view_all_products
 
 # Test data for validation scenarios
 @pytest.mark.parametrize("test_id, name, brand, type_, price, quantity, abv, volume_ml, expected_valid, error_message", [
@@ -63,7 +63,7 @@ def test_add_new_product_success(optional_fields):
                 inputs.extend(["", "", "", ""])
                 
             mock_input.side_effect = inputs
-            mock_insert.return_value = (True, 1)  # Success, ID = 1
+            mock_insert.return_value = (True, 1)
             
             # Execute
             result = add_new_product()
@@ -269,3 +269,177 @@ def test_add_new_product_db_failure():
         result = add_new_product()
         assert result is False
         mock_print.assert_any_call("\nError: Failed to add product - Database error")
+
+
+
+def test_view_all_products_displays_all_products(capsys, monkeypatch):
+    """
+    Test that view_all_products() displays all products correctly
+    """
+    # Mock database response with multiple products
+    mock_products = [
+        {
+            'id': 1,
+            'name': 'Jameson Irish Whiskey',
+            'brand': 'Jameson',
+            'type': 'Whiskey',
+            'abv': 40.0,
+            'volume_ml': 700,
+            'origin_country': 'Ireland',
+            'price': 25.99,
+            'quantity_on_hand': 50,
+            'description': 'Smooth Irish whiskey'
+        },
+        {
+            'id': 2,
+            'name': 'Guinness Draught',
+            'brand': 'Guinness',
+            'type': 'Stout',
+            'abv': 4.2,
+            'volume_ml': 500,
+            'origin_country': 'Ireland',
+            'price': 3.50,
+            'quantity_on_hand': 120,
+            'description': 'Classic Irish stout'
+        },
+        {
+            'id': 3,
+            'name': 'Baileys Irish Cream',
+            'brand': 'Baileys',
+            'type': 'Liqueur',
+            'abv': 17.0,
+            'volume_ml': 750,
+            'origin_country': 'Ireland',
+            'price': 18.75,
+            'quantity_on_hand': 30,
+            'description': 'Creamy liqueur'
+        }
+    ]
+    
+    monkeypatch.setattr('src.product_management.get_all_products', lambda: mock_products)
+    
+    result = view_all_products()
+    
+    captured = capsys.readouterr()
+    
+    assert "=== All Products ===" in captured.out
+    assert "ID" in captured.out
+    assert "Name" in captured.out
+    assert "Brand" in captured.out
+    assert "Price (€)" in captured.out
+    assert "Stock" in captured.out
+    
+    # Verify all products are displayed
+    assert "1" in captured.out
+    assert "Jameson Irish Whiskey" in captured.out
+    assert "Jameson" in captured.out
+    assert "€25.99" in captured.out
+    assert "50" in captured.out
+    
+    assert "2" in captured.out
+    assert "Guinness Draught" in captured.out
+    assert "Guinness" in captured.out
+    assert "€3.50" in captured.out
+    assert "120" in captured.out
+    
+    assert "3" in captured.out
+    assert "Baileys Irish Cream" in captured.out
+    assert "Baileys" in captured.out
+    assert "€18.75" in captured.out
+    assert "30" in captured.out
+    
+    # Verify total count
+    assert "Total products: 3" in captured.out
+    
+    # Verify function returns True
+    assert result is True
+
+
+def test_view_all_products_empty_inventory(capsys, monkeypatch):
+    """
+    Test that view_all_products() handles empty inventory
+    """
+    monkeypatch.setattr('src.product_management.get_all_products', lambda: [])
+    
+    view_all_products()
+    
+    captured = capsys.readouterr()
+    
+    assert "=== All Products ===" in captured.out
+    assert "No products found in inventory." in captured.out
+
+
+def test_view_all_products_single_product(capsys, monkeypatch):
+    """
+    Test that view_all_products() displays single product correctly
+    """
+    mock_products = [
+        {
+            'id': 42,
+            'name': 'Test Vodka',
+            'brand': 'Test Brand',
+            'type': 'Vodka',
+            'abv': 37.5,
+            'volume_ml': 1000,
+            'origin_country': 'Poland',
+            'price': 15.00,
+            'quantity_on_hand': 10,
+            'description': 'Test description'
+        }
+    ]
+    
+    monkeypatch.setattr('src.product_management.get_all_products', lambda: mock_products)
+    
+    result = view_all_products()
+    
+    captured = capsys.readouterr()
+    
+    assert "42" in captured.out
+    assert "Test Vodka" in captured.out
+    assert "Test Brand" in captured.out
+    assert "€15.00" in captured.out
+    assert "10" in captured.out
+    assert "Total products: 1" in captured.out
+    assert result is True
+
+
+def test_view_all_products_price_formatting(capsys, monkeypatch):
+    """
+    Test that prices are formatted correctly with 2 decimal places
+    """
+    mock_products = [
+        {
+            'id': 1,
+            'name': 'Product A',
+            'brand': 'Brand A',
+            'type': 'Type A',
+            'abv': 40.0,
+            'volume_ml': 700,
+            'origin_country': 'Country A',
+            'price': 10.5,  # Should display as €10.50
+            'quantity_on_hand': 5,
+            'description': 'Desc A'
+        },
+        {
+            'id': 2,
+            'name': 'Product B',
+            'brand': 'Brand B',
+            'type': 'Type B',
+            'abv': 20.0,
+            'volume_ml': 500,
+            'origin_country': 'Country B',
+            'price': 99.99,  # Should display as €99.99
+            'quantity_on_hand': 100,
+            'description': 'Desc B'
+        }
+    ]
+    
+    monkeypatch.setattr('src.product_management.get_all_products', lambda: mock_products)
+    
+    view_all_products()
+    
+    captured = capsys.readouterr()
+    
+    # Verify price formatting
+    assert "€10.50" in captured.out
+    assert "€99.99" in captured.out
