@@ -643,7 +643,7 @@ class TestViewTransactionDetails:
 
 def test_view_last_sale(monkeypatch, capsys):
     """
-    SCRUM-75: Test that view_last_transaction() displays the correct transaction
+    SCRUM-71: Test that view_last_transaction() displays the correct transaction
     
     Acceptance Criteria:
     - After completing a sale, view_last_transaction() should display the most recent transaction
