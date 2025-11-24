@@ -341,7 +341,7 @@ class TestClerkMenu:
     @patch('builtins.input')
     @patch('builtins.print')
     def test_clerk_menu_view_last_sale(self, mock_print, mock_input, mock_view_last):
-        """test clerk can access view last sale (scrum-74)"""
+        """test clerk can access view last sale (SCRUM-71)"""
         mock_input.side_effect = ["6", "0"]
         
         show_clerk_menu()
