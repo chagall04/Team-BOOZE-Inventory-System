@@ -193,15 +193,32 @@ class TestManagerMenu:
         
         mock_add_product.assert_called_once()
     
+    @patch('src.app.generate_low_stock_report')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_manager_menu_view_inventory_report(self, mock_print, mock_input):
-        """test manager can access inventory report (not yet implemented)"""
-        mock_input.side_effect = ["2", "0"]
+    def test_manager_menu_view_inventory_report(self, mock_print, mock_input, mock_report):
+        """test manager can access inventory report (SCRUM-14, SCRUM-58)"""
+        mock_input.side_effect = ["2", "20", "0"]
+        mock_report.return_value = "Low Stock Report"
         
         show_manager_menu()
         
         mock_input.assert_called()
+        mock_report.assert_called_once_with(20)
+    
+    @patch('src.app.generate_low_stock_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_manager_menu_view_inventory_report_invalid_threshold(self, mock_print, mock_input, mock_report):
+        """test manager menu handles invalid threshold input (SCRUM-14, SCRUM-58)"""
+        mock_input.side_effect = ["2", "invalid", "0"]
+        mock_report.return_value = "Low Stock Report"
+        
+        show_manager_menu()
+        
+        mock_input.assert_called()
+        # should call with default threshold of 20 due to ValueError
+        mock_report.assert_called_once_with(20)
     
     @patch('builtins.input')
     @patch('builtins.print')
@@ -282,4 +299,44 @@ class TestClerkMenu:
         
         show_clerk_menu()
         
+        mock_input.assert_called()
+    
+    @patch('src.app.log_product_loss')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_clerk_menu_log_product_loss(self, mock_print, mock_input, mock_log_loss):
+        """test clerk can access log product loss (scrum-10)"""
+        mock_input.side_effect = ["4", "0"]
+        
+        show_clerk_menu()
+        
+        mock_log_loss.assert_called_once()
+        mock_input.assert_called()
+
+    @patch('src.app.view_transaction_details')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_clerk_menu_view_transaction_details(self, mock_print, mock_input, mock_view_txn):
+        """test clerk can access view transaction details (scrum-64)"""
+        mock_input.side_effect = ["5", "0"]
+        
+        show_clerk_menu()
+        
+        mock_view_txn.assert_called_once()
+        mock_input.assert_called()
+
+
+class TestManagerMenuTransactionDetails:
+    """test class for manager menu transaction details (scrum-64)"""
+    
+    @patch('src.app.view_transaction_details')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_manager_menu_view_transaction_details(self, mock_print, mock_input, mock_view_txn):
+        """test manager can access view transaction details"""
+        mock_input.side_effect = ["4", "0"]
+        
+        show_manager_menu()
+        
+        mock_view_txn.assert_called_once()
         mock_input.assert_called()

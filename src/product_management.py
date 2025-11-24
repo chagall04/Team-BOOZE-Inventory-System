@@ -11,6 +11,9 @@ from src.database_manager import insert_product, get_db_connection
 # Constants for field names
 INITIAL_STOCK_FIELD = "Initial stock"
 
+# Constants
+INITIAL_STOCK_FIELD = "Initial stock"
+
 def validate_required_field(field_value, field_name):
     """Validate that a required field is not empty"""
     if not field_value or len(field_value.strip()) == 0:
@@ -92,7 +95,7 @@ def add_new_product():
     name = input("Product Name: ").strip()
     brand = input("Brand: ").strip()
     type_ = input("Type (e.g., Beer, Wine, Spirit): ").strip()
-    price = input("Price: $").strip()
+    price = input("Price (€): ").strip()
     quantity = input("Initial Stock Quantity: ").strip()
 
     # Optional details

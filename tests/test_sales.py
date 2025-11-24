@@ -11,7 +11,8 @@ from src.sales import (
     check_stock_availability,
     display_cart,
     process_sale,
-    record_sale
+    record_sale,
+    view_transaction_details
 )
 
 
@@ -234,8 +235,8 @@ class TestDisplayCart:
         captured = capsys.readouterr()
         assert "Product A" in captured.out
         assert "Quantity: 2" in captured.out
-        assert "$21.00" in captured.out
-        assert "Total: $21.00" in captured.out
+        assert "€21.00" in captured.out
+        assert "Total: €21.00" in captured.out
 
     def test_display_cart_multiple_items(self, capsys):
         """Test displaying cart with multiple items"""
@@ -247,7 +248,7 @@ class TestDisplayCart:
         captured = capsys.readouterr()
         assert "Product A" in captured.out
         assert "Product B" in captured.out
-        assert "Total: $26.00" in captured.out
+        assert "Total: €26.00" in captured.out
 
 
 class TestProcessSale:
@@ -504,3 +505,136 @@ class TestRecordSale:
 
         result = record_sale()
         assert result is False
+
+
+class TestViewTransactionDetails:
+    """Test view_transaction_details function (scrum-60)"""
+    
+    @patch('src.sales.get_items_for_transaction')
+    @patch('src.sales.get_transaction_by_id')
+    @patch('builtins.input')
+    def test_view_transaction_details_success(self, mock_input, mock_get_txn, mock_get_items):
+        """Test successfully viewing transaction details"""
+        mock_input.return_value = "1"
+        mock_get_txn.return_value = {
+            "id": 1,
+            "timestamp": "2025-11-10 14:30:00",
+            "total_amount": 45.50
+        }
+        mock_get_items.return_value = [
+            {"name": "Product A", "quantity": 2, "price_at_sale": 10.50},
+            {"name": "Product B", "quantity": 1, "price_at_sale": 24.50}
+        ]
+        
+        result = view_transaction_details()
+        
+        assert result is True
+        mock_get_txn.assert_called_once_with(1)
+        mock_get_items.assert_called_once_with(1)
+    
+    @patch('builtins.input')
+    def test_view_transaction_details_invalid_id_non_numeric(self, mock_input):
+        """Test view transaction with non-numeric ID"""
+        mock_input.return_value = "abc"
+        
+        result = view_transaction_details()
+        
+        assert result is False
+    
+    @patch('builtins.input')
+    def test_view_transaction_details_invalid_id_negative(self, mock_input):
+        """Test view transaction with negative ID"""
+        mock_input.return_value = "-1"
+        
+        result = view_transaction_details()
+        
+        assert result is False
+    
+    @patch('builtins.input')
+    def test_view_transaction_details_invalid_id_zero(self, mock_input):
+        """Test view transaction with zero ID"""
+        mock_input.return_value = "0"
+        
+        result = view_transaction_details()
+        
+        assert result is False
+    
+    @patch('src.sales.get_transaction_by_id')
+    @patch('builtins.input')
+    def test_view_transaction_details_not_found(self, mock_input, mock_get_txn):
+        """Test view transaction when transaction not found"""
+        mock_input.return_value = "999"
+        mock_get_txn.return_value = None
+        
+        result = view_transaction_details()
+        
+        assert result is False
+        mock_get_txn.assert_called_once_with(999)
+    
+    @patch('src.sales.get_items_for_transaction')
+    @patch('src.sales.get_transaction_by_id')
+    @patch('builtins.input')
+    def test_view_transaction_details_no_items(self, mock_input, mock_get_txn, mock_get_items):
+        """Test view transaction when no items found"""
+        mock_input.return_value = "1"
+        mock_get_txn.return_value = {
+            "id": 1,
+            "timestamp": "2025-11-10 14:30:00",
+            "total_amount": 0.00
+        }
+        mock_get_items.return_value = []
+        
+        result = view_transaction_details()
+        
+        assert result is False
+        mock_get_txn.assert_called_once_with(1)
+        mock_get_items.assert_called_once_with(1)
+    
+    @patch('src.sales.get_items_for_transaction')
+    @patch('src.sales.get_transaction_by_id')
+    @patch('builtins.input')
+    def test_view_transaction_details_formatting(self, mock_input, mock_get_txn, mock_get_items, capsys):
+        """Test transaction details output formatting with EUR currency"""
+        mock_input.return_value = "1"
+        mock_get_txn.return_value = {
+            "id": 1,
+            "timestamp": "2025-11-10 14:30:00",
+            "total_amount": 35.00
+        }
+        mock_get_items.return_value = [
+            {"name": "Test Product", "quantity": 2, "price_at_sale": 17.50}
+        ]
+        
+        result = view_transaction_details()
+        
+        assert result is True
+        captured = capsys.readouterr()
+        assert "TRANSACTION RECEIPT" in captured.out
+        assert "Transaction ID: 1" in captured.out
+        assert "Date/Time: 2025-11-10 14:30:00" in captured.out
+        assert "Test Product" in captured.out
+        assert "€17.50" in captured.out
+        assert "€35.00" in captured.out
+    
+    @patch('src.sales.get_items_for_transaction')
+    @patch('src.sales.get_transaction_by_id')
+    @patch('builtins.input')
+    def test_view_transaction_details_multiple_items(self, mock_input, mock_get_txn, mock_get_items):
+        """Test view transaction with multiple items"""
+        mock_input.return_value = "5"
+        mock_get_txn.return_value = {
+            "id": 5,
+            "timestamp": "2025-11-11 10:00:00",
+            "total_amount": 75.00
+        }
+        mock_get_items.return_value = [
+            {"name": "Product A", "quantity": 1, "price_at_sale": 25.00},
+            {"name": "Product B", "quantity": 2, "price_at_sale": 15.00},
+            {"name": "Product C", "quantity": 1, "price_at_sale": 20.00}
+        ]
+        
+        result = view_transaction_details()
+        
+        assert result is True
+        mock_get_txn.assert_called_once_with(5)
+        mock_get_items.assert_called_once_with(5)

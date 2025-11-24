@@ -6,8 +6,13 @@ This module handles the user interface and menu navigation.
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
-from .sales import record_sale
-from .inventory_tracking import receive_new_stock, view_current_stock
+from .sales import record_sale, view_transaction_details
+from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
+from .reporting import generate_low_stock_report
+
+# menu constants
+ENTER_CHOICE_PROMPT = "Enter choice: "
+INVALID_CHOICE_MSG = "Invalid choice, please try again."
 
 
 def show_account_menu():
@@ -20,7 +25,7 @@ def show_account_menu():
     print("[2] Create Account")
     print("[3] Delete Account")
     print("[0] Exit")
-    choice = input("Enter choice: ")
+    choice = input(ENTER_CHOICE_PROMPT)
     return choice
 
 
@@ -64,22 +69,34 @@ def show_manager_menu():
         print("\n[1] Add/Update Product (Product Management)")
         print("[2] View Inventory Report (Reporting & Analytics)")
         print("[3] View Sales History (Sales Management)")
+        print("[4] View Transaction Details (Sales Management)")
         print("[0] Log Out")
-        choice = input("Enter choice: ")
+        choice = input(ENTER_CHOICE_PROMPT)
 
         if choice == '1':
             add_new_product()
         elif choice == '2':
-            # todo: hook up charlie's reporting functions here
-            print("Reporting function not yet implemented.")
+            # scrum-58: hook up low stock report (SCRUM-14)
+            threshold = input("Enter stock threshold (default 20): ").strip()
+            try:
+                threshold = int(threshold) if threshold else 20
+                report = generate_low_stock_report(threshold)
+                print(report)
+            except ValueError:
+                print("Invalid threshold. Using default of 20.")
+                report = generate_low_stock_report(20)
+                print(report)
         elif choice == '3':
-            # todo: hook up sara's view_sales_history() here
+            # scrum-15: view sales history (future sprint)
             print("Sales history function not yet implemented.")
+        elif choice == '4':
+            # scrum-64: view transaction details (SCRUM-60)
+            view_transaction_details()
         elif choice == '0':
             print("Logging out...")
             break
         else:
-            print("Invalid choice, please try again.")
+            print(INVALID_CHOICE_MSG)
 
 def show_clerk_menu():
     """display menu for clerk role"""
@@ -88,8 +105,10 @@ def show_clerk_menu():
         print("\n[1] Record a Sale (Sales Management)")
         print("[2] Receive New Stock (Inventory Tracking)")
         print("[3] View Product Stock (Inventory Tracking)")
+        print("[4] Log Product Loss (Inventory Tracking)")
+        print("[5] View Transaction Details (Sales Management)")
         print("[0] Log Out")
-        choice = input("Enter choice: ")
+        choice = input(ENTER_CHOICE_PROMPT)
 
         if choice == '1':
             record_sale()
@@ -97,11 +116,17 @@ def show_clerk_menu():
             receive_new_stock()
         elif choice == '3':
             view_current_stock()
+        elif choice == '4':
+            # scrum-51 & scrum-48: log product loss (SCRUM-10)
+            log_product_loss()
+        elif choice == '5':
+            # scrum-64: view transaction details (SCRUM-60)
+            view_transaction_details()
         elif choice == '0':
             print("Logging out...")
             break
         else:
-            print("Invalid choice, please try again.")
+            print(INVALID_CHOICE_MSG)
 
 def main():
     """
@@ -146,7 +171,7 @@ def main():
             break
 
         else:
-            print("Invalid choice, please try again.")
+            print(INVALID_CHOICE_MSG)
 
 if __name__ == "__main__":
     main()
