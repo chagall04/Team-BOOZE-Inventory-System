@@ -4,6 +4,8 @@
 This module handles the user interface and menu navigation.
 """
 
+__version__ = "1.0.0"
+
 from datetime import datetime
 from getpass import getpass
 
@@ -78,6 +80,16 @@ def show_session_header():
         print(f"{Fore.WHITE}Logged in as: {Fore.CYAN}{CURRENT_USER}{Style.RESET_ALL} "
               f"({role_color}{CURRENT_ROLE}{Style.RESET_ALL}) "
               f"{Fore.WHITE}| Session started: {time_str}{Style.RESET_ALL}")
+
+
+def show_welcome_banner():
+    """display ascii art welcome banner with version"""
+    print(f"\n{Fore.GREEN}")
+    print("╔══════════════════════════════════════════════════╗")
+    print("║       🍺 TEAM BOOZE INVENTORY SYSTEM 🍺          ║")
+    print(f"║                    v{__version__}                        ║")
+    print("╚══════════════════════════════════════════════════╝")
+    print(f"{Style.RESET_ALL}")
 
 
 def show_dashboard():
@@ -341,9 +353,7 @@ def main():
     """
     global CURRENT_USER, CURRENT_ROLE, LOGIN_TIME  # pylint: disable=global-statement
     
-    print(f"\n{Fore.GREEN}" + "═" * 50)
-    print("   Welcome to the Team-BOOZE Inventory System")
-    print("═" * 50 + f"{Style.RESET_ALL}")
+    show_welcome_banner()
 
     while True:
         choice = show_account_menu()
@@ -407,8 +417,10 @@ def main():
             handle_delete_account()
 
         elif choice in ('0', 'Q', 'QUIT'):
-            print(f"\n{Fore.GREEN}Goodbye! Thank you for using Team-BOOZE.{Style.RESET_ALL}")
-            break
+            if confirm_action("Exit the application?"):
+                print(f"\n{Fore.GREEN}Goodbye! Thank you for using Team-BOOZE v{__version__}.{Style.RESET_ALL}")
+                break
+            # user cancelled exit, continue loop
 
         else:
             print(INVALID_CHOICE_MSG)

@@ -125,12 +125,13 @@ class TestHandleDeleteAccount:
 class TestMain:
     """test class for main application entry point"""
     
+    @patch('src.app.confirm_action', return_value=True)
     @patch('src.app.show_account_menu')
     @patch('src.app.login')
     @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_main_manager_login_success(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu):
+    def test_main_manager_login_success(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu, mock_confirm):
         """test successful manager login flow"""
         mock_menu.side_effect = ["1", "0"]
         mock_input.side_effect = ["manager", "0"]
@@ -141,12 +142,13 @@ class TestMain:
         
         mock_login.assert_called_once_with("manager", "manager123")
     
+    @patch('src.app.confirm_action', return_value=True)
     @patch('src.app.show_account_menu')
     @patch('src.app.login')
     @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_main_clerk_login_success(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu):
+    def test_main_clerk_login_success(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu, mock_confirm):
         """test successful clerk login flow"""
         mock_menu.side_effect = ["1", "0"]
         mock_input.side_effect = ["clerk", "0"]
@@ -157,12 +159,13 @@ class TestMain:
         
         mock_login.assert_called_once_with("clerk", "clerk123")
     
+    @patch('src.app.confirm_action', return_value=True)
     @patch('src.app.show_account_menu')
     @patch('src.app.login')
     @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_main_login_failure(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu):
+    def test_main_login_failure(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu, mock_confirm):
         """test failed login shows access denied"""
         mock_menu.side_effect = ["1", "0"]
         mock_input.side_effect = ["baduser"]
@@ -173,10 +176,11 @@ class TestMain:
         
         mock_login.assert_called_once_with("baduser", "badpass")
     
+    @patch('src.app.confirm_action', return_value=True)
     @patch('src.app.show_account_menu')
     @patch('src.app.handle_create_account')
     @patch('builtins.print')
-    def test_main_create_account_flow(self, mock_print, mock_handle_create, mock_menu):
+    def test_main_create_account_flow(self, mock_print, mock_handle_create, mock_menu, mock_confirm):
         """test create account menu option"""
         mock_menu.side_effect = ["2", "0"]
         mock_handle_create.return_value = True
@@ -185,10 +189,11 @@ class TestMain:
         
         mock_handle_create.assert_called_once()
     
+    @patch('src.app.confirm_action', return_value=True)
     @patch('src.app.show_account_menu')
     @patch('src.app.handle_delete_account')
     @patch('builtins.print')
-    def test_main_delete_account_flow(self, mock_print, mock_handle_delete, mock_menu):
+    def test_main_delete_account_flow(self, mock_print, mock_handle_delete, mock_menu, mock_confirm):
         """test delete account menu option"""
         mock_menu.side_effect = ["3", "0"]
         mock_handle_delete.return_value = True
@@ -197,9 +202,10 @@ class TestMain:
         
         mock_handle_delete.assert_called_once()
     
+    @patch('src.app.confirm_action', return_value=True)
     @patch('src.app.show_account_menu')
     @patch('builtins.print')
-    def test_main_invalid_menu_choice(self, mock_print, mock_menu):
+    def test_main_invalid_menu_choice(self, mock_print, mock_menu, mock_confirm):
         """test invalid menu choice"""
         mock_menu.side_effect = ["9", "0"]
         
@@ -207,6 +213,19 @@ class TestMain:
         
         # verify it loops back without crashing
         assert mock_menu.call_count == 2
+    
+    @patch('src.app.confirm_action')
+    @patch('src.app.show_account_menu')
+    @patch('builtins.print')
+    def test_main_exit_cancelled(self, mock_print, mock_menu, mock_confirm):
+        """test exit confirmation cancelled returns to menu"""
+        mock_menu.side_effect = ["0", "0"]
+        mock_confirm.side_effect = [False, True]  # first cancel, then confirm
+        
+        main()
+        
+        # confirm_action called twice (cancelled then accepted)
+        assert mock_confirm.call_count == 2
 
 
 class TestManagerMenu:
