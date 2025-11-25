@@ -14,7 +14,8 @@ from src.database_manager import (
     create_user,
     delete_user,
     insert_product,
-    get_all_products
+    get_all_products,
+    get_all_transactions
 )
 
 
@@ -1050,7 +1051,7 @@ class TestGetLowStockReport:
         
         result = get_low_stock_report(20)
         
-        assert result == []
+        assert not result
         assert isinstance(result, list)
         mock_conn.close.assert_called_once()
     
@@ -1067,7 +1068,7 @@ class TestGetLowStockReport:
         
         result = get_low_stock_report(20)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
 
 
@@ -1182,7 +1183,7 @@ class TestGetItemsForTransaction:
         
         result = get_items_for_transaction(123)
         
-        assert result == []
+        assert not result
         assert isinstance(result, list)
         mock_conn.close.assert_called_once()
     
@@ -1199,5 +1200,114 @@ class TestGetItemsForTransaction:
         
         result = get_items_for_transaction(123)
         
-        assert result == []
+        assert not result
+        mock_conn.close.assert_called_once()
+
+
+# scrum-15: get all transactions tests
+class TestGetAllTransactions:
+    """test class for get_all_transactions database function"""
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_all_transactions_success(self, mock_get_db):
+        """test successful retrieval of all transactions"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_rows = [
+            {
+                "transaction_id": 3,
+                "timestamp": "2025-11-25 14:00:00",
+                "total_amount": 75.50
+            },
+            {
+                "transaction_id": 2,
+                "timestamp": "2025-11-24 10:30:00",
+                "total_amount": 45.00
+            },
+            {
+                "transaction_id": 1,
+                "timestamp": "2025-11-23 09:00:00",
+                "total_amount": 30.00
+            }
+        ]
+        mock_cursor.fetchall.return_value = mock_rows
+        
+        result = get_all_transactions()
+        
+        assert len(result) == 3
+        assert result[0]["id"] == 3
+        assert result[0]["timestamp"] == "2025-11-25 14:00:00"
+        assert result[0]["total_amount"] == pytest.approx(75.50)
+        assert result[1]["id"] == 2
+        assert result[2]["id"] == 1
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_all_transactions_empty(self, mock_get_db):
+        """test empty transactions returns empty list"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = []
+        
+        result = get_all_transactions()
+        
+        assert not result
+        assert isinstance(result, list)
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_all_transactions_database_error(self, mock_get_db):
+        """test database error returns empty list"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
+        
+        result = get_all_transactions()
+        
+        assert not result
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_all_transactions_ordered_by_timestamp_desc(self, mock_get_db):
+        """test transactions are ordered by timestamp descending"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = []
+        
+        get_all_transactions()
+        
+        # verify SQL query orders by timestamp DESC
+        call_args = mock_cursor.execute.call_args[0][0]
+        assert 'ORDER BY timestamp DESC' in call_args
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_get_all_transactions_single_transaction(self, mock_get_db):
+        """test retrieving single transaction"""
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_rows = [{
+            "transaction_id": 1,
+            "timestamp": "2025-11-25 12:00:00",
+            "total_amount": 25.99
+        }]
+        mock_cursor.fetchall.return_value = mock_rows
+        
+        result = get_all_transactions()
+        
+        assert len(result) == 1
+        assert result[0]["id"] == 1
+        assert result[0]["total_amount"] == pytest.approx(25.99)
         mock_conn.close.assert_called_once()

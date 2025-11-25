@@ -6,7 +6,12 @@ This module handles the user interface and menu navigation.
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
-from .sales import record_sale, view_transaction_details, view_last_transaction  # scrum-74: added view_last_transaction
+from .sales import (
+    record_sale,
+    view_transaction_details,
+    view_last_transaction,
+    view_sales_history  # scrum-15: added view_sales_history
+)
 from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
 from .reporting import (
     generate_low_stock_report,
@@ -163,8 +168,8 @@ def show_manager_menu():
             # scrum-58: hook up low stock report (SCRUM-14)
             handle_view_low_stock_report()
         elif choice == '3':
-            # scrum-15: view sales history (future sprint)
-            print("Sales history function not yet implemented.")
+            # scrum-15: view sales history
+            view_sales_history()
         elif choice == '4':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()

@@ -463,6 +463,40 @@ def update_product(product_id, data):
     return update_product_details(product_id, data)
 
 
+def get_all_transactions():
+    """
+    scrum-15: retrieve all transactions for sales history
+    
+    returns:
+        list of dicts with 'id', 'timestamp', 'total_amount'
+        sorted by timestamp descending (most recent first)
+        returns empty list on error
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT transaction_id, timestamp, total_amount 
+               FROM transactions 
+               ORDER BY timestamp DESC"""
+        )
+        results = cursor.fetchall()
+        
+        transactions = []
+        for row in results:
+            transactions.append({
+                "id": row["transaction_id"],
+                "timestamp": row["timestamp"],
+                "total_amount": row["total_amount"]
+            })
+        
+        return transactions
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()
+
+
 def get_total_inventory_value():
     """
     calculate total inventory value by multiplying price by stock for all products
