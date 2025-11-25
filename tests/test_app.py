@@ -68,8 +68,8 @@ class TestHandleDeleteAccount:
     @patch('builtins.input')
     @patch('builtins.print')
     def test_handle_delete_account_success(self, mock_print, mock_input, mock_delete):
-        """test successful account deletion"""
-        mock_input.side_effect = ["testuser", "password123"]
+        """test successful account deletion with confirmation"""
+        mock_input.side_effect = ["testuser", "password123", "yes"]
         mock_delete.return_value = (True, "user deleted")
         
         result = handle_delete_account()
@@ -82,8 +82,30 @@ class TestHandleDeleteAccount:
     @patch('builtins.print')
     def test_handle_delete_account_failure(self, mock_print, mock_input, mock_delete):
         """test failed account deletion"""
-        mock_input.side_effect = ["testuser", "wrongpass"]
+        mock_input.side_effect = ["testuser", "wrongpass", "yes"]
         mock_delete.return_value = (False, "incorrect password")
+        
+        result = handle_delete_account()
+        
+        assert result is False
+    
+    @patch('src.app.delete_account')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_delete_account_cancelled(self, mock_print, mock_input, mock_delete):
+        """test account deletion cancelled by user"""
+        mock_input.side_effect = ["testuser", "password123", "no"]
+        
+        result = handle_delete_account()
+        
+        assert result is False
+        mock_delete.assert_not_called()
+    
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_delete_account_quit_username(self, mock_print, mock_input):
+        """test quitting at username prompt"""
+        mock_input.side_effect = ["Q"]
         
         result = handle_delete_account()
         

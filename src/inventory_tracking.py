@@ -9,8 +9,16 @@ from colorama import Fore, Style
 from .database_manager import get_stock_by_id, adjust_stock, search_products_by_term
 
 # Constants for user prompts
-PROMPT_PRODUCT_ID = f"{Fore.YELLOW}Enter Product ID: {Style.RESET_ALL}"
-ERROR_PRODUCT_ID_NOT_NUMBER = f"{Fore.RED}Error: Product ID must be a number.{Style.RESET_ALL}"
+PROMPT_PRODUCT_ID = f"{Fore.YELLOW}Enter Product ID (or [Q] to cancel): {Style.RESET_ALL}"
+ERROR_PRODUCT_ID_NOT_NUMBER = (
+    f"{Fore.RED}Error: Product ID must be a number.{Style.RESET_ALL}\n"
+    f"{Fore.YELLOW}Hint: Use 'View Product Stock' or search to find product IDs.{Style.RESET_ALL}"
+)
+
+
+def is_quit(value):
+    """check if user wants to quit/cancel"""
+    return value.strip().upper() in ('Q', 'QUIT', 'EXIT', 'CANCEL')
 
 def receive_new_stock():
     """
@@ -23,18 +31,29 @@ def receive_new_stock():
     print(f"\n{Fore.CYAN}--- Receive New Stock ---{Style.RESET_ALL}")
 
     # SCRUM-30: CLI interface for receiving stock
+    product_id_str = input(PROMPT_PRODUCT_ID).strip()
+    if is_quit(product_id_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        product_id = int(input(PROMPT_PRODUCT_ID))
+        product_id = int(product_id_str)
     except ValueError:
         print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
 
+    qty_str = input(f"{Fore.YELLOW}Enter quantity to add (or [Q] to cancel): {Style.RESET_ALL}").strip()
+    if is_quit(qty_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        quantity_to_add = int(input(f"{Fore.YELLOW}Enter quantity to add: {Style.RESET_ALL}"))
+        quantity_to_add = int(qty_str)
         if quantity_to_add < 0:
             raise ValueError("Quantity cannot be negative")
     except ValueError as e:
         print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Enter a positive whole number.{Style.RESET_ALL}")
         return False
 
     # Get current stock level (SCRUM-29)
@@ -42,6 +61,7 @@ def receive_new_stock():
 
     if current_stock is None:
         print(f"{Fore.RED}Error: Product with ID {product_id} not found.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Use 'View Product Stock' [3] to search for valid product IDs.{Style.RESET_ALL}")
         return False
 
     # Calculate new stock level
@@ -54,10 +74,10 @@ def receive_new_stock():
         return False
 
     # If we get here, update was successful
-    print(f"\n{Fore.GREEN}Success! Updated stock for {current_stock['name']}:{Style.RESET_ALL}")
-    print(f"Previous stock level: {current_stock['quantity']}")
-    print(f"Added: {Fore.GREEN}+{quantity_to_add}{Style.RESET_ALL}")
-    print(f"New stock level: {Fore.WHITE}{new_stock_level}{Style.RESET_ALL}")
+    print(f"\n{Fore.GREEN}✓ Success! Updated stock for {current_stock['name']}:{Style.RESET_ALL}")
+    print(f"  Previous stock level: {current_stock['quantity']}")
+    print(f"  Added: {Fore.GREEN}+{quantity_to_add}{Style.RESET_ALL}")
+    print(f"  New stock level: {Fore.WHITE}{new_stock_level}{Style.RESET_ALL}")
     return True
 
 def view_current_stock():
@@ -71,8 +91,13 @@ def view_current_stock():
     print(f"\n{Fore.CYAN}--- View Current Stock ---{Style.RESET_ALL}")
 
     # SCRUM-32: Handle product lookup
+    product_id_str = input(PROMPT_PRODUCT_ID).strip()
+    if is_quit(product_id_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        product_id = int(input(PROMPT_PRODUCT_ID))
+        product_id = int(product_id_str)
     except ValueError:
         print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
@@ -82,12 +107,18 @@ def view_current_stock():
 
     if stock_data is None:
         print(f"{Fore.RED}Error: Product with ID {product_id} not found.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Try searching by name or brand using the search feature.{Style.RESET_ALL}")
         return False
 
     # SCRUM-34: Format and display the data
     print(f"\n{Fore.WHITE}Stock Information:{Style.RESET_ALL}")
-    print(f"Product Name: {Fore.CYAN}{stock_data['name']}{Style.RESET_ALL}")
-    print(f"Current Stock: {Fore.WHITE}{stock_data['quantity']}{Style.RESET_ALL} units")
+    print(f"  Product Name: {Fore.CYAN}{stock_data['name']}{Style.RESET_ALL}")
+    print(f"  Current Stock: {Fore.WHITE}{stock_data['quantity']}{Style.RESET_ALL} units")
+    
+    # add warning if low stock
+    if stock_data['quantity'] < 20:
+        print(f"  {Fore.YELLOW}⚠ Low stock warning: Consider reordering.{Style.RESET_ALL}")
+    
     return True
 
 def log_product_loss():
@@ -101,8 +132,13 @@ def log_product_loss():
     print(f"\n{Fore.CYAN}--- Log Product Loss ---{Style.RESET_ALL}")
 
     # SCRUM-48: CLI interface for logging product loss
+    product_id_str = input(PROMPT_PRODUCT_ID).strip()
+    if is_quit(product_id_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        product_id = int(input(PROMPT_PRODUCT_ID))
+        product_id = int(product_id_str)
     except ValueError:
         print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
@@ -112,26 +148,37 @@ def log_product_loss():
 
     if current_stock is None:
         print(f"{Fore.RED}Error: Product with ID {product_id} not found.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Use 'View Product Stock' [3] to find valid product IDs.{Style.RESET_ALL}")
         return False
 
+    # show current stock to help user
+    print(f"  {Fore.WHITE}Product:{Style.RESET_ALL} {current_stock['name']}")
+    print(f"  {Fore.WHITE}Current stock:{Style.RESET_ALL} {current_stock['quantity']} units")
+
     # Get quantity lost from user
+    qty_str = input(f"{Fore.YELLOW}Enter quantity lost (or [Q] to cancel): {Style.RESET_ALL}").strip()
+    if is_quit(qty_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        quantity_lost_input = input(f"{Fore.YELLOW}Enter quantity lost: {Style.RESET_ALL}")
-        quantity_lost = int(quantity_lost_input)
+        quantity_lost = int(qty_str)
     except ValueError:
         print(f"{Fore.RED}Error: Quantity lost must be a number.{Style.RESET_ALL}")
         return False
     if quantity_lost < 0:
-        print(f"{Fore.RED}Error: Quantity lost cannot be negative{Style.RESET_ALL}")
+        print(f"{Fore.RED}Error: Quantity lost cannot be negative.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Enter a positive number (e.g., 5).{Style.RESET_ALL}")
         return False
     if quantity_lost == 0:
-        print(f"{Fore.RED}Error: Quantity lost must be greater than zero{Style.RESET_ALL}")
+        print(f"{Fore.RED}Error: Quantity lost must be greater than zero.{Style.RESET_ALL}")
         return False
 
     # Verify we have enough stock to lose
     if quantity_lost > current_stock['quantity']:
-        print(f"{Fore.RED}Error: Cannot log loss of {quantity_lost} units. "
-              f"Current stock is only {current_stock['quantity']} units.{Style.RESET_ALL}")
+        print(f"{Fore.RED}Error: Cannot log loss of {quantity_lost} units.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Current stock is only {current_stock['quantity']} units. "
+              f"Enter a value ≤ {current_stock['quantity']}.{Style.RESET_ALL}")
         return False
 
     # Calculate new stock level
@@ -144,10 +191,10 @@ def log_product_loss():
         return False
 
     # If we get here, update was successful
-    print(f"\n{Fore.GREEN}Success! Logged loss for {current_stock['name']}:{Style.RESET_ALL}")
-    print(f"Previous stock level: {current_stock['quantity']}")
-    print(f"Lost: {Fore.RED}-{quantity_lost}{Style.RESET_ALL}")
-    print(f"New stock level: {Fore.WHITE}{new_stock_level}{Style.RESET_ALL}")
+    print(f"\n{Fore.GREEN}✓ Success! Logged loss for {current_stock['name']}:{Style.RESET_ALL}")
+    print(f"  Previous stock level: {current_stock['quantity']}")
+    print(f"  Lost: {Fore.RED}-{quantity_lost}{Style.RESET_ALL}")
+    print(f"  New stock level: {Fore.WHITE}{new_stock_level}{Style.RESET_ALL}")
     return True
 
 def search_products():
