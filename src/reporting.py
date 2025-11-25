@@ -4,11 +4,29 @@
 
 """This module contains logic for querying the DB and generating reports.
 
-User Stories SCRUM-14, SCRUM-15, and SCRUM-16 are in the
-"Upcoming" backlog and will be implemented in a future sprint.
+Implements SCRUM-14 (low stock report), SCRUM-15 (inventory value), and
+SCRUM-16 (export reports to CSV/JSON).
 """
 
-from .database_manager import get_low_stock_report, get_total_inventory_value
+import csv
+import json
+import os
+
+from .database_manager import get_low_stock_report, get_total_inventory_value, get_all_products
+
+# scrum-16: protected filenames that cannot be overwritten
+PROTECTED_FILES = [
+    "inventory.db",
+    "main.py",
+    "app.py",
+    "auth.py",
+    "database_manager.py",
+    "inventory_tracking.py",
+    "product_management.py",
+    "reporting.py",
+    "sales.py",
+    "__init__.py",
+]
 
 
 def format_currency(value):
@@ -93,3 +111,106 @@ def view_total_inventory_value():
     report += "=" * 70 + "\n"
     
     print(report)
+
+
+# scrum-16: export report functions
+
+def export_to_csv(data, filename):
+    """
+    export list of dictionaries to csv file
+    
+    args:
+        data: list of dicts with consistent keys
+        filename: output file path
+    
+    returns:
+        tuple (success: bool, message: str)
+    """
+    # handle empty data
+    if not data:
+        return False, "No data to export"
+    
+    try:
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            # use keys from first dict as fieldnames
+            fieldnames = list(data[0].keys())
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            
+            writer.writeheader()
+            writer.writerows(data)
+        
+        return True, f"Successfully exported to {filename}"
+    except (OSError, IOError) as e:
+        return False, f"Failed to write file: {str(e)}"
+
+
+def export_to_json(data, filename):
+    """
+    export data to json file with proper indentation
+    
+    args:
+        data: data to serialize (typically list of dicts)
+        filename: output file path
+    
+    returns:
+        tuple (success: bool, message: str)
+    """
+    try:
+        with open(filename, 'w', encoding='utf-8') as jsonfile:
+            json.dump(data, jsonfile, indent=4)
+        
+        return True, f"Successfully exported to {filename}"
+    except (OSError, IOError) as e:
+        return False, f"Failed to write file: {str(e)}"
+    except (TypeError, ValueError) as e:
+        return False, f"Failed to serialize data: {str(e)}"
+
+
+def is_protected_filename(filename):
+    """
+    check if filename matches a protected system file
+    
+    args:
+        filename: filename to check (can include path)
+    
+    returns:
+        bool: True if file is protected and should not be overwritten
+    """
+    # extract just the filename from path
+    base_name = os.path.basename(filename)
+    
+    # check against protected list (case insensitive)
+    return base_name.lower() in [f.lower() for f in PROTECTED_FILES]
+
+
+def export_report(report_type, file_format, filename):
+    """
+    main export function - orchestrates data prep and file export
+    
+    args:
+        report_type: 'low_stock' or 'inventory'
+        file_format: 'csv' or 'json'
+        filename: output filename
+    
+    returns:
+        tuple (success: bool, message: str)
+    """
+    # validate filename is not protected
+    if is_protected_filename(filename):
+        return False, f"Cannot overwrite protected file: {filename}"
+    
+    # prepare data based on report type
+    if report_type == 'low_stock':
+        data = get_low_stock_report(20)  # default threshold
+    elif report_type == 'inventory':
+        data = get_all_products()
+    else:
+        return False, f"Unknown report type: {report_type}"
+    
+    # export based on format
+    if file_format == 'csv':
+        return export_to_csv(data, filename)
+    if file_format == 'json':
+        return export_to_json(data, filename)
+    
+    return False, f"Unknown file format: {file_format}"

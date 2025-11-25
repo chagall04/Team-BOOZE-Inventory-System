@@ -4,8 +4,21 @@
 
 """Tests for reporting functionality including low stock reports."""
 
+import json
+import os
+import tempfile
 from unittest.mock import patch
-from src.reporting import generate_low_stock_report, format_currency, view_total_inventory_value
+
+from src.reporting import (
+    generate_low_stock_report,
+    format_currency,
+    view_total_inventory_value,
+    export_to_csv,
+    export_to_json,
+    is_protected_filename,
+    export_report,
+    PROTECTED_FILES
+)
 
 
 class TestLowStockReport:
@@ -442,3 +455,353 @@ class TestViewTotalInventoryValue:
         
         assert "€1,234.56" in printed_output
 
+
+# scrum-16: export to csv tests
+class TestExportToCsv:
+    """test class for export_to_csv utility function"""
+    
+    def test_export_to_csv_success(self):
+        """test successful csv export with valid data"""
+        data = [
+            {"id": 1, "name": "Product A", "price": 10.00},
+            {"id": 2, "name": "Product B", "price": 20.00}
+        ]
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_csv(data, tmp_path)
+            
+            assert success is True
+            assert "Successfully exported" in message
+            assert tmp_path in message
+            
+            # verify file contents
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                assert "id,name,price" in content
+                assert "Product A" in content
+                assert "Product B" in content
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_csv_empty_data(self):
+        """test csv export with empty data returns error"""
+        data = []
+        
+        success, message = export_to_csv(data, "test.csv")
+        
+        assert success is False
+        assert "No data to export" in message
+    
+    def test_export_to_csv_single_record(self):
+        """test csv export with single record"""
+        data = [{"id": 1, "name": "Single Product", "quantity": 50}]
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_csv(data, tmp_path)
+            
+            assert success is True
+            
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                assert "Single Product" in content
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_csv_special_characters(self):
+        """test csv export handles special characters"""
+        data = [{"id": 1, "name": "Café Latte, Special", "price": 5.50}]
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_csv(data, tmp_path)
+            
+            assert success is True
+            
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                assert "Café" in content
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_csv_file_write_error(self):
+        """test csv export handles file write errors"""
+        data = [{"id": 1, "name": "Test"}]
+        
+        # use invalid path to trigger error
+        invalid_path = "/nonexistent/directory/test.csv"
+        
+        success, message = export_to_csv(data, invalid_path)
+        
+        assert success is False
+        assert "Failed to write file" in message
+
+
+# scrum-16: export to json tests
+class TestExportToJson:
+    """test class for export_to_json utility function"""
+    
+    def test_export_to_json_success(self):
+        """test successful json export with valid data"""
+        data = [
+            {"id": 1, "name": "Product A", "price": 10.00},
+            {"id": 2, "name": "Product B", "price": 20.00}
+        ]
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_json(data, tmp_path)
+            
+            assert success is True
+            assert "Successfully exported" in message
+            
+            # verify file contents are valid json
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
+                assert len(loaded) == 2
+                assert loaded[0]["name"] == "Product A"
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_json_empty_list(self):
+        """test json export with empty list"""
+        data = []
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_json(data, tmp_path)
+            
+            assert success is True
+            
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
+                assert loaded == []
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_json_indentation(self):
+        """test json export has proper indentation"""
+        data = [{"id": 1, "name": "Test"}]
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_json(data, tmp_path)
+            
+            assert success is True
+            
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # indented json has newlines
+                assert '\n' in content
+                # should have 4 space indentation
+                assert '    ' in content
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_json_file_write_error(self):
+        """test json export handles file write errors"""
+        data = [{"id": 1, "name": "Test"}]
+        
+        # use invalid path to trigger error
+        invalid_path = "/nonexistent/directory/test.json"
+        
+        success, message = export_to_json(data, invalid_path)
+        
+        assert success is False
+        assert "Failed to write file" in message
+    
+    def test_export_to_json_nested_data(self):
+        """test json export handles nested data structures"""
+        data = {
+            "report": "inventory",
+            "items": [
+                {"id": 1, "name": "Item 1"},
+                {"id": 2, "name": "Item 2"}
+            ],
+            "total": 2
+        }
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_json(data, tmp_path)
+            
+            assert success is True
+            
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
+                assert loaded["total"] == 2
+        finally:
+            os.unlink(tmp_path)
+    
+    def test_export_to_json_non_serializable_data(self):
+        """test json export handles non-serializable data"""
+        # sets are not json serializable
+        data = {"items": {1, 2, 3}}
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            success, message = export_to_json(data, tmp_path)
+            
+            assert success is False
+            assert "Failed to serialize data" in message
+        finally:
+            # clean up if file was partially created
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+
+
+# scrum-16: protected filename tests
+class TestIsProtectedFilename:
+    """test class for is_protected_filename validation"""
+    
+    def test_is_protected_filename_inventory_db(self):
+        """test inventory.db is protected"""
+        assert is_protected_filename("inventory.db") is True
+    
+    def test_is_protected_filename_main_py(self):
+        """test main.py is protected"""
+        assert is_protected_filename("main.py") is True
+    
+    def test_is_protected_filename_app_py(self):
+        """test app.py is protected"""
+        assert is_protected_filename("app.py") is True
+    
+    def test_is_protected_filename_reporting_py(self):
+        """test reporting.py is protected"""
+        assert is_protected_filename("reporting.py") is True
+    
+    def test_is_protected_filename_with_path(self):
+        """test protection works with full paths"""
+        assert is_protected_filename("/path/to/inventory.db") is True
+        assert is_protected_filename("src/app.py") is True
+    
+    def test_is_protected_filename_case_insensitive(self):
+        """test protection is case insensitive"""
+        assert is_protected_filename("INVENTORY.DB") is True
+        assert is_protected_filename("Main.py") is True
+    
+    def test_is_protected_filename_valid_names(self):
+        """test valid filenames are not protected"""
+        assert is_protected_filename("report.csv") is False
+        assert is_protected_filename("export.json") is False
+        assert is_protected_filename("my_data.csv") is False
+    
+    def test_is_protected_filename_similar_names(self):
+        """test similar but different names are not protected"""
+        assert is_protected_filename("inventory_report.csv") is False
+        assert is_protected_filename("app_backup.py") is False
+    
+    def test_protected_files_list_contents(self):
+        """test protected files list contains expected files"""
+        assert "inventory.db" in PROTECTED_FILES
+        assert "main.py" in PROTECTED_FILES
+        assert "app.py" in PROTECTED_FILES
+        assert "__init__.py" in PROTECTED_FILES
+
+
+# scrum-16: export report orchestration tests
+class TestExportReport:
+    """test class for main export_report function"""
+    
+    @patch('src.reporting.get_low_stock_report')
+    @patch('src.reporting.export_to_csv')
+    def test_export_report_low_stock_csv(self, mock_csv, mock_get_low_stock):
+        """test export low stock report to csv"""
+        mock_get_low_stock.return_value = [{"id": 1, "name": "Test"}]
+        mock_csv.return_value = (True, "Success")
+        
+        success, message = export_report('low_stock', 'csv', 'report.csv')
+        
+        assert success is True
+        mock_get_low_stock.assert_called_once()
+        mock_csv.assert_called_once()
+    
+    @patch('src.reporting.get_low_stock_report')
+    @patch('src.reporting.export_to_json')
+    def test_export_report_low_stock_json(self, mock_json, mock_get_low_stock):
+        """test export low stock report to json"""
+        mock_get_low_stock.return_value = [{"id": 1, "name": "Test"}]
+        mock_json.return_value = (True, "Success")
+        
+        success, message = export_report('low_stock', 'json', 'report.json')
+        
+        assert success is True
+        mock_get_low_stock.assert_called_once()
+        mock_json.assert_called_once()
+    
+    @patch('src.reporting.get_all_products')
+    @patch('src.reporting.export_to_csv')
+    def test_export_report_inventory_csv(self, mock_csv, mock_get_all):
+        """test export inventory report to csv"""
+        mock_get_all.return_value = [{"id": 1, "name": "Test"}]
+        mock_csv.return_value = (True, "Success")
+        
+        success, message = export_report('inventory', 'csv', 'report.csv')
+        
+        assert success is True
+        mock_get_all.assert_called_once()
+    
+    @patch('src.reporting.get_all_products')
+    @patch('src.reporting.export_to_json')
+    def test_export_report_inventory_json(self, mock_json, mock_get_all):
+        """test export inventory report to json"""
+        mock_get_all.return_value = [{"id": 1, "name": "Test"}]
+        mock_json.return_value = (True, "Success")
+        
+        success, message = export_report('inventory', 'json', 'report.json')
+        
+        assert success is True
+        mock_get_all.assert_called_once()
+    
+    def test_export_report_protected_filename(self):
+        """test export fails for protected filename"""
+        success, message = export_report('low_stock', 'csv', 'inventory.db')
+        
+        assert success is False
+        assert "protected file" in message.lower()
+    
+    def test_export_report_invalid_report_type(self):
+        """test export fails for invalid report type"""
+        success, message = export_report('invalid_type', 'csv', 'report.csv')
+        
+        assert success is False
+        assert "Unknown report type" in message
+    
+    @patch('src.reporting.get_low_stock_report')
+    def test_export_report_invalid_format(self, mock_get_low_stock):
+        """test export fails for invalid file format"""
+        mock_get_low_stock.return_value = [{"id": 1}]
+        
+        success, message = export_report('low_stock', 'invalid', 'report.txt')
+        
+        assert success is False
+        assert "Unknown file format" in message
+    
+    @patch('src.reporting.get_low_stock_report')
+    @patch('src.reporting.export_to_csv')
+    def test_export_report_csv_failure(self, mock_csv, mock_get_low_stock):
+        """test export handles csv failure"""
+        mock_get_low_stock.return_value = [{"id": 1}]
+        mock_csv.return_value = (False, "Write error")
+        
+        success, message = export_report('low_stock', 'csv', 'report.csv')
+        
+        assert success is False
+        assert "Write error" in message

@@ -11,7 +11,9 @@ from src.app import (
     show_clerk_menu,
     show_account_menu,
     handle_create_account,
-    handle_delete_account
+    handle_delete_account,
+    handle_export_report,
+    handle_view_low_stock_report
 )
 
 
@@ -376,3 +378,187 @@ class TestManagerMenuTransactionDetails:
         
         mock_view_txn.assert_called_once()
         mock_input.assert_called()
+
+
+# scrum-16: export report handler tests
+class TestHandleExportReport:
+    """test class for handle_export_report menu flow"""
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_low_stock_csv_success(self, mock_print, mock_input, mock_export):
+        """test successful low stock csv export"""
+        mock_input.side_effect = ["1", "1", "my_report"]
+        mock_export.return_value = (True, "Successfully exported to my_report.csv")
+        
+        result = handle_export_report()
+        
+        assert result is True
+        mock_export.assert_called_once_with('low_stock', 'csv', 'my_report.csv')
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_low_stock_json_success(self, mock_print, mock_input, mock_export):
+        """test successful low stock json export"""
+        mock_input.side_effect = ["1", "2", "my_report"]
+        mock_export.return_value = (True, "Successfully exported to my_report.json")
+        
+        result = handle_export_report()
+        
+        assert result is True
+        mock_export.assert_called_once_with('low_stock', 'json', 'my_report.json')
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_inventory_csv_success(self, mock_print, mock_input, mock_export):
+        """test successful inventory csv export"""
+        mock_input.side_effect = ["2", "1", "inventory_export"]
+        mock_export.return_value = (True, "Successfully exported")
+        
+        result = handle_export_report()
+        
+        assert result is True
+        mock_export.assert_called_once_with('inventory', 'csv', 'inventory_export.csv')
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_inventory_json_success(self, mock_print, mock_input, mock_export):
+        """test successful inventory json export"""
+        mock_input.side_effect = ["2", "2", "inventory_export"]
+        mock_export.return_value = (True, "Successfully exported")
+        
+        result = handle_export_report()
+        
+        assert result is True
+        mock_export.assert_called_once_with('inventory', 'json', 'inventory_export.json')
+    
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_invalid_report_choice(self, mock_print, mock_input):
+        """test invalid report type choice"""
+        mock_input.side_effect = ["9"]
+        
+        result = handle_export_report()
+        
+        assert result is False
+    
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_invalid_format_choice(self, mock_print, mock_input):
+        """test invalid format choice"""
+        mock_input.side_effect = ["1", "9"]
+        
+        result = handle_export_report()
+        
+        assert result is False
+    
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_empty_filename(self, mock_print, mock_input):
+        """test empty filename returns error"""
+        mock_input.side_effect = ["1", "1", ""]
+        
+        result = handle_export_report()
+        
+        assert result is False
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_export_failure(self, mock_print, mock_input, mock_export):
+        """test export failure returns false"""
+        mock_input.side_effect = ["1", "1", "report"]
+        mock_export.return_value = (False, "No data to export")
+        
+        result = handle_export_report()
+        
+        assert result is False
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_filename_with_extension(self, mock_print, mock_input, mock_export):
+        """test filename with extension is not duplicated"""
+        mock_input.side_effect = ["1", "1", "report.csv"]
+        mock_export.return_value = (True, "Success")
+        
+        result = handle_export_report()
+        
+        assert result is True
+        mock_export.assert_called_once_with('low_stock', 'csv', 'report.csv')
+    
+    @patch('src.app.export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_export_report_json_with_extension(self, mock_print, mock_input, mock_export):
+        """test json filename with extension is not duplicated"""
+        mock_input.side_effect = ["2", "2", "data.json"]
+        mock_export.return_value = (True, "Success")
+        
+        result = handle_export_report()
+        
+        assert result is True
+        mock_export.assert_called_once_with('inventory', 'json', 'data.json')
+
+
+class TestManagerMenuExportReport:
+    """test class for export report in manager menu (scrum-16)"""
+    
+    @patch('src.app.handle_export_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_manager_menu_export_report(self, mock_print, mock_input, mock_export):
+        """test manager can access export report option"""
+        mock_input.side_effect = ["6", "0"]
+        mock_export.return_value = True
+        
+        show_manager_menu()
+        
+        mock_export.assert_called_once()
+        mock_input.assert_called()
+
+
+# scrum-58: view low stock report handler tests
+class TestHandleViewLowStockReport:
+    """test class for handle_view_low_stock_report function"""
+    
+    @patch('src.app.generate_low_stock_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_view_low_stock_report_with_threshold(self, mock_print, mock_input, mock_report):
+        """test low stock report with user-provided threshold"""
+        mock_input.return_value = "30"
+        mock_report.return_value = "Low Stock Report"
+        
+        handle_view_low_stock_report()
+        
+        mock_report.assert_called_once_with(30)
+        mock_print.assert_called()
+    
+    @patch('src.app.generate_low_stock_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_view_low_stock_report_default_threshold(self, mock_print, mock_input, mock_report):
+        """test low stock report uses default threshold when empty input"""
+        mock_input.return_value = ""
+        mock_report.return_value = "Low Stock Report"
+        
+        handle_view_low_stock_report()
+        
+        mock_report.assert_called_once_with(20)
+    
+    @patch('src.app.generate_low_stock_report')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_handle_view_low_stock_report_invalid_threshold(self, mock_print, mock_input, mock_report):
+        """test low stock report handles invalid threshold"""
+        mock_input.return_value = "invalid"
+        mock_report.return_value = "Low Stock Report"
+        
+        handle_view_low_stock_report()
+        
+        mock_report.assert_called_once_with(20)
