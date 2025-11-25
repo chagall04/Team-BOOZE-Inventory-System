@@ -6,6 +6,9 @@
 and viewing products in the 'booze' table."""
 
 import sqlite3
+
+from colorama import Fore, Style
+
 from src.database_manager import insert_product, get_db_connection, get_all_products
 
 # Constants for field names
@@ -87,29 +90,29 @@ def add_new_product():
     - SCRUM-25: Client-side validation
     - SCRUM-24: Database insertion via insert_product()
     """
-    print("\n=== Add New Product ===")
+    print(f"\n{Fore.CYAN}=== Add New Product ==={Style.RESET_ALL}")
 
     # Get user input (SCRUM-26)
-    name = input("Product Name: ").strip()
-    brand = input("Brand: ").strip()
-    type_ = input("Type (e.g., Beer, Wine, Spirit): ").strip()
-    price = input("Price (€): ").strip()
-    quantity = input("Initial Stock Quantity: ").strip()
+    name = input(f"{Fore.YELLOW}Product Name: {Style.RESET_ALL}").strip()
+    brand = input(f"{Fore.YELLOW}Brand: {Style.RESET_ALL}").strip()
+    type_ = input(f"{Fore.YELLOW}Type (e.g., Beer, Wine, Spirit): {Style.RESET_ALL}").strip()
+    price = input(f"{Fore.YELLOW}Price (€): {Style.RESET_ALL}").strip()
+    quantity = input(f"{Fore.YELLOW}Initial Stock Quantity: {Style.RESET_ALL}").strip()
 
     # Optional details
-    print("\nOptional Details (press Enter to skip):")
-    abv = input("ABV % (e.g., 40.0): ").strip()
-    volume_ml = input("Volume in ml (e.g., 700): ").strip()
-    origin = input("Country of Origin: ").strip()
-    description = input("Product Description: ").strip()
+    print(f"\n{Fore.WHITE}Optional Details (press Enter to skip):{Style.RESET_ALL}")
+    abv = input(f"{Fore.YELLOW}ABV % (e.g., 40.0): {Style.RESET_ALL}").strip()
+    volume_ml = input(f"{Fore.YELLOW}Volume in ml (e.g., 700): {Style.RESET_ALL}").strip()
+    origin = input(f"{Fore.YELLOW}Country of Origin: {Style.RESET_ALL}").strip()
+    description = input(f"{Fore.YELLOW}Product Description: {Style.RESET_ALL}").strip()
 
     # Validate input (SCRUM-25)
     is_valid, errors = validate_product_data(name, brand, type_, price, quantity, abv, volume_ml)
 
     if not is_valid:
-        print("\nError: Invalid product data:")
+        print(f"\n{Fore.RED}Error: Invalid product data:{Style.RESET_ALL}")
         for error in errors:
-            print(f"- {error}")
+            print(f"{Fore.RED}- {error}{Style.RESET_ALL}")
         return False
 
     # Prepare data for database
@@ -129,9 +132,9 @@ def add_new_product():
     success, result = insert_product(product_data)
 
     if success:
-        print(f"\nSuccess! Product '{name}' has been added with ID: {result}")
+        print(f"\n{Fore.GREEN}Success! Product '{name}' has been added with ID: {result}{Style.RESET_ALL}")
         return True
-    print(f"\nError: Failed to add product - {result}")
+    print(f"\n{Fore.RED}Error: Failed to add product - {result}{Style.RESET_ALL}")
     return False
 
 
@@ -146,25 +149,25 @@ def view_all_products():
         True if products are displayed successfully.
         None if the inventory is empty.
     """
-    print("\n=== All Products ===")
+    print(f"\n{Fore.CYAN}=== All Products ==={Style.RESET_ALL}")
     
     products = get_all_products()
     
     if not products:
-        print("No products found in inventory.")
+        print(f"{Fore.YELLOW}No products found in inventory.{Style.RESET_ALL}")
         return False
     
     # Display header
-    print(f"\n{'ID':<5} {'Name':<30} {'Brand':<20} {'Price (€)':<12} {'Stock':<8}")
+    print(f"\n{Fore.WHITE}{'ID':<5} {'Name':<30} {'Brand':<20} {'Price (€)':<12} {'Stock':<8}{Style.RESET_ALL}")
     print("-" * 80)
     
     # Display each product
     for product in products:
-        price_formatted = f"€{product['price']:.2f}"
+        price_formatted = f"{Fore.GREEN}€{product['price']:.2f}{Style.RESET_ALL}"
         print(f"{product['id']:<5} {product['name']:<30} {product['brand']:<20} "
-              f"{price_formatted:<12} {product['quantity_on_hand']:<8}")
+              f"{price_formatted:<21} {product['quantity_on_hand']:<8}")
     
-    print(f"\nTotal products: {len(products)}")
+    print(f"\nTotal products: {Fore.WHITE}{len(products)}{Style.RESET_ALL}")
     return True
 
 

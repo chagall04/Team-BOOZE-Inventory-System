@@ -42,14 +42,23 @@ The **Minimum Viable Product (MVP)** is structured around four core functionalit
 
 ### Usage
 
-The application currently uses a Command Line Interface (CLI) as the presentation layer.
+The application uses a Command Line Interface (CLI) with colored output.
 
-Run the main application file:
+Run the application:
 ```bash
-python main.py
-````
+python -m src.app
+```
 
-*(Detailed usage instructions and commands will be added as the CLI is fully developed.)*
+#### Default Login Credentials
+- **Manager**: username `manager`, password `manager123`
+- **Clerk**: username `clerk`, password `clerk123`
+
+#### Features
+- 📊 Dashboard with quick stats on login
+- 🔐 Secure password input (hidden when typing)
+- 🎨 Color-coded menus and messages
+- ⌨️ `[Q]` to quit/cancel any operation
+- ✓ Confirmation prompts for destructive actions
 
 -----
 
@@ -67,8 +76,3 @@ python main.py
   - Lucy O'Connor
   - Séan Bardon
   - Sara Larkem
-
-<!-- end list -->
-
-```
-```

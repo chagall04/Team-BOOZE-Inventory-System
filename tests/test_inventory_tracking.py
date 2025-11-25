@@ -4,10 +4,17 @@ Tests the receive_new_stock function and its dependent database functions
 """
 
 import os
+import re
 import sqlite3
 from unittest.mock import patch
 import pytest
 from src.database_manager import get_stock_by_id, adjust_stock
+
+
+def strip_ansi(text):
+    """remove ansi color codes from text for test assertions"""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 
 @pytest.fixture(autouse=True)
@@ -148,8 +155,9 @@ def test_view_current_stock_success(mock_input, capsys):
     
     # Check the output format
     captured = capsys.readouterr()
-    assert "Product Name: Test Product" in captured.out
-    assert "Current Stock: 50 units" in captured.out
+    output = strip_ansi(captured.out)
+    assert "Product Name: Test Product" in output
+    assert "Current Stock: 50 units" in output
 
 @patch('builtins.input', side_effect=['abc'])
 def test_view_current_stock_invalid_id(mock_input, capsys):
@@ -299,3 +307,101 @@ def test_log_product_loss_entire_stock(mock_input):
     updated = get_stock_by_id(1)
     assert updated is not None
     assert updated['quantity'] == 0
+
+
+# scrum-66: search products tests
+class TestSearchProducts:
+    """test class for search_products function"""
+    
+    @patch('src.inventory_tracking.search_products_by_term')
+    @patch('builtins.input')
+    def test_search_products_finds_results(self, mock_input, mock_search, capsys):
+        """test search products displays results"""
+        from src.inventory_tracking import search_products
+        
+        mock_input.return_value = "whiskey"
+        mock_search.return_value = [
+            {"id": 1, "name": "Jameson Whiskey", "brand": "Jameson", 
+             "quantity_on_hand": 50, "price": 25.99}
+        ]
+        
+        result = search_products()
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        
+        assert result is True
+        assert "Found 1 matching products" in output
+        assert "Jameson Whiskey" in output
+        assert "€25.99" in output
+    
+    @patch('src.inventory_tracking.search_products_by_term')
+    @patch('builtins.input')
+    def test_search_products_no_results(self, mock_input, mock_search, capsys):
+        """test search products with no matches"""
+        from src.inventory_tracking import search_products
+        
+        mock_input.return_value = "nonexistent"
+        mock_search.return_value = []
+        
+        result = search_products()
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        
+        assert result is True
+        assert "No products found matching 'nonexistent'" in output
+    
+    @patch('builtins.input')
+    def test_search_products_empty_term(self, mock_input, capsys):
+        """test search products with empty search term"""
+        from src.inventory_tracking import search_products
+        
+        mock_input.return_value = ""
+        
+        result = search_products()
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        
+        assert result is False
+        assert "Error: Search term cannot be empty" in output
+    
+    @patch('src.inventory_tracking.search_products_by_term')
+    @patch('builtins.input')
+    def test_search_products_multiple_results(self, mock_input, mock_search, capsys):
+        """test search products with multiple matches"""
+        from src.inventory_tracking import search_products
+        
+        mock_input.return_value = "irish"
+        mock_search.return_value = [
+            {"id": 1, "name": "Jameson Irish Whiskey", "brand": "Jameson", 
+             "quantity_on_hand": 50, "price": 25.99},
+            {"id": 2, "name": "Bushmills Irish", "brand": "Bushmills", 
+             "quantity_on_hand": 30, "price": 28.50}
+        ]
+        
+        result = search_products()
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        
+        assert result is True
+        assert "Found 2 matching products" in output
+        assert "Jameson Irish Whiskey" in output
+        assert "Bushmills Irish" in output
+    
+    @patch('src.inventory_tracking.search_products_by_term')
+    @patch('builtins.input')
+    def test_search_products_null_brand(self, mock_input, mock_search, capsys):
+        """test search products handles null brand"""
+        from src.inventory_tracking import search_products
+        
+        mock_input.return_value = "test"
+        mock_search.return_value = [
+            {"id": 1, "name": "Test Product", "brand": None, 
+             "quantity_on_hand": 10, "price": 5.00}
+        ]
+        
+        result = search_products()
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        
+        assert result is True
+        assert "N/A" in output  # null brand should show as N/A

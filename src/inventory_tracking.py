@@ -4,11 +4,21 @@
 
 """This module contains the business logic for managing stock levels."""
 
+from colorama import Fore, Style
+
 from .database_manager import get_stock_by_id, adjust_stock, search_products_by_term
 
 # Constants for user prompts
-PROMPT_PRODUCT_ID = "Enter Product ID: "
-ERROR_PRODUCT_ID_NOT_NUMBER = "Error: Product ID must be a number."
+PROMPT_PRODUCT_ID = f"{Fore.YELLOW}Enter Product ID (or [Q] to cancel): {Style.RESET_ALL}"
+ERROR_PRODUCT_ID_NOT_NUMBER = (
+    f"{Fore.RED}Error: Product ID must be a number.{Style.RESET_ALL}\n"
+    f"{Fore.YELLOW}Hint: Use 'View Product Stock' or search to find product IDs.{Style.RESET_ALL}"
+)
+
+
+def is_quit(value):
+    """check if user wants to quit/cancel"""
+    return value.strip().upper() in ('Q', 'QUIT', 'EXIT', 'CANCEL')
 
 def receive_new_stock():
     """
@@ -18,28 +28,40 @@ def receive_new_stock():
     Returns:
         bool: True if stock was successfully updated, False otherwise
     """
-    print("\n--- Receive New Stock ---")
+    print(f"\n{Fore.CYAN}--- Receive New Stock ---{Style.RESET_ALL}")
 
     # SCRUM-30: CLI interface for receiving stock
+    product_id_str = input(PROMPT_PRODUCT_ID).strip()
+    if is_quit(product_id_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        product_id = int(input(PROMPT_PRODUCT_ID))
+        product_id = int(product_id_str)
     except ValueError:
         print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
 
+    qty_str = input(f"{Fore.YELLOW}Enter quantity to add (or [Q] to cancel): {Style.RESET_ALL}").strip()
+    if is_quit(qty_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        quantity_to_add = int(input("Enter quantity to add: "))
+        quantity_to_add = int(qty_str)
         if quantity_to_add < 0:
             raise ValueError("Quantity cannot be negative")
     except ValueError as e:
-        print(f"Error: {str(e)}")
+        print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Enter a positive whole number.{Style.RESET_ALL}")
         return False
 
     # Get current stock level (SCRUM-29)
     current_stock = get_stock_by_id(product_id)
 
     if current_stock is None:
-        print(f"Error: Product with ID {product_id} not found.")
+        print(f"{Fore.RED}Error: Product with ID {product_id} not found.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Use 'View Product Stock' [3] to search for valid product IDs.{Style.RESET_ALL}")
         return False
 
     # Calculate new stock level
@@ -48,14 +70,14 @@ def receive_new_stock():
     # Update the database (SCRUM-28)
     update_result = adjust_stock(product_id, new_stock_level)
     if not update_result:
-        print("\nError: Failed to update stock level in database.")
+        print(f"\n{Fore.RED}Error: Failed to update stock level in database.{Style.RESET_ALL}")
         return False
 
     # If we get here, update was successful
-    print(f"\nSuccess! Updated stock for {current_stock['name']}:")
-    print(f"Previous stock level: {current_stock['quantity']}")
-    print(f"Added: {quantity_to_add}")
-    print(f"New stock level: {new_stock_level}")
+    print(f"\n{Fore.GREEN}✓ Success! Updated stock for {current_stock['name']}:{Style.RESET_ALL}")
+    print(f"  Previous stock level: {current_stock['quantity']}")
+    print(f"  Added: {Fore.GREEN}+{quantity_to_add}{Style.RESET_ALL}")
+    print(f"  New stock level: {Fore.WHITE}{new_stock_level}{Style.RESET_ALL}")
     return True
 
 def view_current_stock():
@@ -66,11 +88,16 @@ def view_current_stock():
     Returns:
         bool: True if stock was successfully displayed, False if there was an error
     """
-    print("\n--- View Current Stock ---")
+    print(f"\n{Fore.CYAN}--- View Current Stock ---{Style.RESET_ALL}")
 
     # SCRUM-32: Handle product lookup
+    product_id_str = input(PROMPT_PRODUCT_ID).strip()
+    if is_quit(product_id_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        product_id = int(input(PROMPT_PRODUCT_ID))
+        product_id = int(product_id_str)
     except ValueError:
         print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
@@ -79,13 +106,19 @@ def view_current_stock():
     stock_data = get_stock_by_id(product_id)
 
     if stock_data is None:
-        print(f"Error: Product with ID {product_id} not found.")
+        print(f"{Fore.RED}Error: Product with ID {product_id} not found.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Try searching by name or brand using the search feature.{Style.RESET_ALL}")
         return False
 
     # SCRUM-34: Format and display the data
-    print("\nStock Information:")
-    print(f"Product Name: {stock_data['name']}")
-    print(f"Current Stock: {stock_data['quantity']} units")
+    print(f"\n{Fore.WHITE}Stock Information:{Style.RESET_ALL}")
+    print(f"  Product Name: {Fore.CYAN}{stock_data['name']}{Style.RESET_ALL}")
+    print(f"  Current Stock: {Fore.WHITE}{stock_data['quantity']}{Style.RESET_ALL} units")
+    
+    # add warning if low stock
+    if stock_data['quantity'] < 20:
+        print(f"  {Fore.YELLOW}⚠ Low stock warning: Consider reordering.{Style.RESET_ALL}")
+    
     return True
 
 def log_product_loss():
@@ -96,11 +129,16 @@ def log_product_loss():
     Returns:
         bool: True if loss was successfully logged, False otherwise
     """
-    print("\n--- Log Product Loss ---")
+    print(f"\n{Fore.CYAN}--- Log Product Loss ---{Style.RESET_ALL}")
 
     # SCRUM-48: CLI interface for logging product loss
+    product_id_str = input(PROMPT_PRODUCT_ID).strip()
+    if is_quit(product_id_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        product_id = int(input(PROMPT_PRODUCT_ID))
+        product_id = int(product_id_str)
     except ValueError:
         print(ERROR_PRODUCT_ID_NOT_NUMBER)
         return False
@@ -109,26 +147,38 @@ def log_product_loss():
     current_stock = get_stock_by_id(product_id)
 
     if current_stock is None:
-        print(f"Error: Product with ID {product_id} not found.")
+        print(f"{Fore.RED}Error: Product with ID {product_id} not found.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Use 'View Product Stock' [3] to find valid product IDs.{Style.RESET_ALL}")
         return False
 
+    # show current stock to help user
+    print(f"  {Fore.WHITE}Product:{Style.RESET_ALL} {current_stock['name']}")
+    print(f"  {Fore.WHITE}Current stock:{Style.RESET_ALL} {current_stock['quantity']} units")
+
     # Get quantity lost from user
+    qty_str = input(f"{Fore.YELLOW}Enter quantity lost (or [Q] to cancel): {Style.RESET_ALL}").strip()
+    if is_quit(qty_str):
+        print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
+        return False
+    
     try:
-        quantity_lost_input = input("Enter quantity lost: ")
-        quantity_lost = int(quantity_lost_input)
+        quantity_lost = int(qty_str)
     except ValueError:
-        print("Error: Quantity lost must be a number.")
+        print(f"{Fore.RED}Error: Quantity lost must be a number.{Style.RESET_ALL}")
         return False
     if quantity_lost < 0:
-        print("Error: Quantity lost cannot be negative")
+        print(f"{Fore.RED}Error: Quantity lost cannot be negative.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Enter a positive number (e.g., 5).{Style.RESET_ALL}")
         return False
     if quantity_lost == 0:
-        print("Error: Quantity lost must be greater than zero")
+        print(f"{Fore.RED}Error: Quantity lost must be greater than zero.{Style.RESET_ALL}")
         return False
 
     # Verify we have enough stock to lose
     if quantity_lost > current_stock['quantity']:
-        print(f"Error: Cannot log loss of {quantity_lost} units. Current stock is only {current_stock['quantity']} units.")
+        print(f"{Fore.RED}Error: Cannot log loss of {quantity_lost} units.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Hint: Current stock is only {current_stock['quantity']} units. "
+              f"Enter a value ≤ {current_stock['quantity']}.{Style.RESET_ALL}")
         return False
 
     # Calculate new stock level
@@ -137,14 +187,14 @@ def log_product_loss():
     # SCRUM-50: Reuse adjust_stock() function, passing in the new quantity
     update_result = adjust_stock(product_id, new_stock_level)
     if not update_result:
-        print("\nError: Failed to update stock level in database.")
+        print(f"\n{Fore.RED}Error: Failed to update stock level in database.{Style.RESET_ALL}")
         return False
 
     # If we get here, update was successful
-    print(f"\nSuccess! Logged loss for {current_stock['name']}:")
-    print(f"Previous stock level: {current_stock['quantity']}")
-    print(f"Lost: {quantity_lost}")
-    print(f"New stock level: {new_stock_level}")
+    print(f"\n{Fore.GREEN}✓ Success! Logged loss for {current_stock['name']}:{Style.RESET_ALL}")
+    print(f"  Previous stock level: {current_stock['quantity']}")
+    print(f"  Lost: {Fore.RED}-{quantity_lost}{Style.RESET_ALL}")
+    print(f"  New stock level: {Fore.WHITE}{new_stock_level}{Style.RESET_ALL}")
     return True
 
 def search_products():
@@ -154,13 +204,13 @@ def search_products():
     Implementation:
     - SCRUM-68: Get input and display results
     """
-    print("\n--- Search Products ---")
+    print(f"\n{Fore.CYAN}--- Search Products ---{Style.RESET_ALL}")
     
     # Get search term
-    search_term = input("Enter search term (name or brand): ").strip()
+    search_term = input(f"{Fore.YELLOW}Enter search term (name or brand): {Style.RESET_ALL}").strip()
     
     if len(search_term) == 0:
-        print("Error: Search term cannot be empty.")
+        print(f"{Fore.RED}Error: Search term cannot be empty.{Style.RESET_ALL}")
         return False
 
     # Query database (SCRUM-67)
@@ -168,12 +218,12 @@ def search_products():
     
     # Display results
     if not results:
-        print(f"\nNo products found matching '{search_term}'.")
+        print(f"\n{Fore.YELLOW}No products found matching '{search_term}'.{Style.RESET_ALL}")
         return True
         
-    print(f"\nFound {len(results)} matching products:")
+    print(f"\n{Fore.GREEN}Found {len(results)} matching products:{Style.RESET_ALL}")
     print("-" * 75)
-    print(f"{'ID':<5} {'Product Name':<25} {'Brand':<15} {'Stock':<8} {'Price':<10}")
+    print(f"{Fore.WHITE}{'ID':<5} {'Product Name':<25} {'Brand':<15} {'Stock':<8} {'Price':<10}{Style.RESET_ALL}")
     print("-" * 75)
     
     for product in results:
@@ -183,10 +233,7 @@ def search_products():
         qty = product["quantity_on_hand"]
         price = product["price"]
         
-        print(f"{p_id:<5} {name:<25} {brand:<15} {qty:<8} €{price:<9.2f}")
+        print(f"{p_id:<5} {name:<25} {brand:<15} {qty:<8} {Fore.GREEN}€{price:<9.2f}{Style.RESET_ALL}")
         
     print("-" * 75)
     return True
-
-# --- Backlog (Not in Sprint 1) ---
-# SCRUM-10 (Log Product Loss) has been implemented above.
