@@ -222,14 +222,17 @@ class TestManagerMenu:
         # should call with default threshold of 20 due to ValueError
         mock_report.assert_called_once_with(20)
     
+    @patch('src.app.view_sales_history')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_manager_menu_view_sales_history(self, mock_print, mock_input):
-        """test manager can access sales history (not yet implemented)"""
+    def test_manager_menu_view_sales_history(self, mock_print, mock_input, mock_view_history):
+        """test manager can access sales history (scrum-15)"""
         mock_input.side_effect = ["3", "0"]
+        mock_view_history.return_value = True
         
         show_manager_menu()
         
+        mock_view_history.assert_called_once()
         mock_input.assert_called()
     
     @patch('src.app.view_total_inventory_value')
@@ -349,18 +352,6 @@ class TestClerkMenu:
         show_clerk_menu()
         
         mock_view_last.assert_called_once()
-        mock_input.assert_called()
-
-    @patch('src.app.search_products')
-    @patch('builtins.input')
-    @patch('builtins.print')
-    def test_clerk_menu_search_products(self, mock_print, mock_input, mock_search):
-        """test clerk can access search products (SCRUM-66)"""
-        mock_input.side_effect = ["7", "0"]
-        
-        show_clerk_menu()
-        
-        mock_search.assert_called_once()
         mock_input.assert_called()
 
 

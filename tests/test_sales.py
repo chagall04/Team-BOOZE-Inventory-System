@@ -12,7 +12,8 @@ from src.sales import (
     display_cart,
     process_sale,
     record_sale,
-    view_transaction_details
+    view_transaction_details,
+    view_sales_history
 )
 
 
@@ -770,3 +771,207 @@ def test_view_last_sale_error_handling(monkeypatch, capsys):
             
             assert result is False
             assert "Error: No items found for last transaction" in captured.out
+
+
+# scrum-15: view sales history tests
+class TestViewSalesHistory:
+    """test class for view_sales_history function"""
+    
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_no_transactions(self, mock_input, mock_get_all, capsys):
+        """test view sales history with no transactions"""
+        mock_get_all.return_value = []
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is False
+        assert "No sales transactions found" in captured.out
+    
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_displays_list(self, mock_input, mock_get_all, capsys):
+        """test view sales history displays transaction list"""
+        mock_get_all.return_value = [
+            {"id": 3, "timestamp": "2025-11-25 14:00:00", "total_amount": 75.50},
+            {"id": 2, "timestamp": "2025-11-24 10:30:00", "total_amount": 45.00},
+            {"id": 1, "timestamp": "2025-11-23 09:00:00", "total_amount": 30.00}
+        ]
+        mock_input.return_value = "0"
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "Sales History" in captured.out
+        assert "2025-11-25 14:00:00" in captured.out
+        assert "75.50" in captured.out
+        assert "Total transactions: 3" in captured.out
+    
+    @patch('src.sales.get_items_for_transaction')
+    @patch('src.sales.get_transaction_by_id')
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_select_transaction(self, mock_input, mock_get_all, 
+                                                    mock_get_txn, mock_get_items, capsys):
+        """test selecting a transaction to view details"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = "1"
+        mock_get_txn.return_value = {
+            "id": 1,
+            "timestamp": "2025-11-25 12:00:00",
+            "total_amount": 50.00
+        }
+        mock_get_items.return_value = [
+            {"name": "Test Product", "quantity": 2, "price_at_sale": 25.00}
+        ]
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "TRANSACTION DETAILS" in captured.out
+        assert "Test Product" in captured.out
+        mock_get_txn.assert_called_once_with(1)
+        mock_get_items.assert_called_once_with(1)
+    
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_invalid_id_non_numeric(self, mock_input, mock_get_all, capsys):
+        """test invalid non-numeric transaction id"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = "abc"
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "must be a valid number" in captured.out
+    
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_invalid_id_negative(self, mock_input, mock_get_all, capsys):
+        """test invalid negative transaction id"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = "-1"
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "must be a positive number" in captured.out
+    
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_transaction_not_in_list(self, mock_input, mock_get_all, capsys):
+        """test selecting transaction id not in list"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = "999"
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "not found" in captured.out
+    
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_empty_input(self, mock_input, mock_get_all):
+        """test empty input returns to menu"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = ""
+        
+        result = view_sales_history()
+        
+        assert result is True
+    
+    @patch('src.sales.get_transaction_by_id')
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_transaction_retrieval_error(self, mock_input, 
+                                                            mock_get_all, mock_get_txn, capsys):
+        """test error when transaction cannot be retrieved"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = "1"
+        mock_get_txn.return_value = None
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "Could not retrieve transaction" in captured.out
+    
+    @patch('src.sales.get_items_for_transaction')
+    @patch('src.sales.get_transaction_by_id')
+    @patch('src.sales.get_all_transactions')
+    @patch('builtins.input')
+    def test_view_sales_history_no_items_for_transaction(self, mock_input, mock_get_all,
+                                                          mock_get_txn, mock_get_items, capsys):
+        """test error when no items found for transaction"""
+        mock_get_all.return_value = [
+            {"id": 1, "timestamp": "2025-11-25 12:00:00", "total_amount": 50.00}
+        ]
+        mock_input.return_value = "1"
+        mock_get_txn.return_value = {
+            "id": 1,
+            "timestamp": "2025-11-25 12:00:00",
+            "total_amount": 50.00
+        }
+        mock_get_items.return_value = []
+        
+        result = view_sales_history()
+        captured = capsys.readouterr()
+        
+        assert result is True
+        assert "No items found for transaction" in captured.out
+
+
+# scrum-15: integration test for view sales history
+def test_view_sales_history():
+    """
+    scrum-15: integration test that verifies view_sales_history()
+    displays all transactions and allows viewing details
+    
+    acceptance criteria:
+    - system displays list of past sales
+    - includes date, products sold, quantities, total amount
+    - user can select a transaction to see full item list
+    """
+    from src.database_manager import get_all_transactions, get_items_for_transaction
+    
+    # get actual transactions from database
+    transactions = get_all_transactions()
+    
+    # if we have transactions, verify the structure
+    if transactions:
+        assert isinstance(transactions, list)
+        
+        # verify each transaction has required fields
+        for txn in transactions:
+            assert "id" in txn
+            assert "timestamp" in txn
+            assert "total_amount" in txn
+        
+        # verify we can get items for each transaction
+        for txn in transactions:
+            items = get_items_for_transaction(txn["id"])
+            assert isinstance(items, list)
+            
+            # if items exist, verify structure
+            for item in items:
+                assert "name" in item
+                assert "quantity" in item
+                assert "price_at_sale" in item

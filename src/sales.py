@@ -8,7 +8,8 @@ from src.database_manager import (
     get_product_details,
     process_sale_transaction,
     get_transaction_by_id,
-    get_items_for_transaction
+    get_items_for_transaction,
+    get_all_transactions
 )
 
 # Constants
@@ -319,5 +320,67 @@ def view_last_transaction():
     return True
 
 
-# --- Backlog ---
-# SCRUM-13 (View Sales History) - future sprint
+def view_sales_history():
+    """
+    scrum-15: display list of all sales transactions
+    allows user to select a transaction to view full details
+    
+    returns:
+        True if history was displayed, False on error or empty
+    """
+    print("\n=== Sales History ===")
+    
+    transactions = get_all_transactions()
+    
+    if not transactions:
+        print("No sales transactions found.")
+        return False
+    
+    # display all transactions
+    print(f"\n{'ID':<6} {'Date/Time':<20} {'Total':>10}")
+    print("-" * 40)
+    
+    for txn in transactions:
+        print(f"{txn['id']:<6} {txn['timestamp']:<20} €{txn['total_amount']:>9.2f}")
+    
+    print("-" * 40)
+    print(f"Total transactions: {len(transactions)}")
+    
+    # prompt to view details
+    print("\nEnter transaction ID to view details, or 0 to go back:")
+    choice = input("Transaction ID: ").strip()
+    
+    if choice in ('0', ''):
+        return True
+    
+    # validate transaction id
+    try:
+        transaction_id = int(choice)
+        if transaction_id <= 0:
+            print("Error: Transaction ID must be a positive number")
+            return True
+    except ValueError:
+        print("Error: Transaction ID must be a valid number")
+        return True
+    
+    # check if transaction exists in our list
+    txn_ids = [t['id'] for t in transactions]
+    if transaction_id not in txn_ids:
+        print(f"Error: Transaction with ID {transaction_id} not found")
+        return True
+    
+    # retrieve and display transaction details
+    transaction = get_transaction_by_id(transaction_id)
+    if transaction is None:
+        print(f"Error: Could not retrieve transaction {transaction_id}")
+        return True
+    
+    items = get_items_for_transaction(transaction_id)
+    if not items:
+        print(f"Error: No items found for transaction {transaction_id}")
+        return True
+    
+    # print receipt
+    print_receipt(transaction, items, "TRANSACTION DETAILS")
+    
+    return True

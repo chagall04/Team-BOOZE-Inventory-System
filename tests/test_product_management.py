@@ -1130,4 +1130,3 @@ class TestValidationHelpers:
         
         assert len(errors) > 0
         assert any("Product name" in err for err in errors)
-
