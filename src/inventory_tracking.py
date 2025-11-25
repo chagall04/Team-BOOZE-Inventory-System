@@ -180,7 +180,7 @@ def search_products():
         p_id = product["id"]
         name = product["name"][:25]  # truncate for display
         brand = product["brand"][:15] if product["brand"] else "N/A"
-        qty = product["quantity"]
+        qty = product["quantity_on_hand"]
         price = product["price"]
         
         print(f"{p_id:<5} {name:<25} {brand:<15} {qty:<8} €{price:<9.2f}")

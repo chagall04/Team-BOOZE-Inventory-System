@@ -1338,8 +1338,8 @@ class TestSearchProductsByTerm:
         mock_conn.cursor.return_value = mock_cursor
         mock_cursor.execute.side_effect = sqlite3.Error("Database error")
         
+        
         result = search_products_by_term("vodka")
         
         assert not result
         mock_conn.close.assert_called_once()
-
