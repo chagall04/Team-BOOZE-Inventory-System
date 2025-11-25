@@ -6,9 +6,13 @@ This module handles the user interface and menu navigation.
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
-from .sales import record_sale, view_transaction_details
+from .sales import record_sale, view_transaction_details, view_last_transaction  # scrum-74: added view_last_transaction
 from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
-from .reporting import generate_low_stock_report, view_total_inventory_value
+from .reporting import (
+    generate_low_stock_report,
+    view_total_inventory_value,
+    export_report
+)
 
 # menu constants
 ENTER_CHOICE_PROMPT = "Enter choice: "
@@ -62,6 +66,84 @@ def handle_delete_account():
     print(f"\nError: {message}")
     return False
 
+
+def handle_view_low_stock_report():
+    """
+    scrum-58: handle low stock report display
+    prompts for threshold and displays report
+    """
+    threshold = input("Enter stock threshold (default 20): ").strip()
+    try:
+        threshold = int(threshold) if threshold else 20
+    except ValueError:
+        print("Invalid threshold. Using default of 20.")
+        threshold = 20
+    
+    report = generate_low_stock_report(threshold)
+    print(report)
+
+
+def handle_export_report():
+    """
+    scrum-16: handle export report menu flow
+    prompts user for report type, format, and filename
+    
+    returns:
+        bool: True if export successful, False otherwise
+    """
+    print("\n=== Export Report ===")
+    
+    # select report type
+    print("\nSelect report to export:")
+    print("[1] Low Stock Report")
+    print("[2] Inventory Report")
+    report_choice = input(ENTER_CHOICE_PROMPT).strip()
+    
+    if report_choice == '1':
+        report_type = 'low_stock'
+    elif report_choice == '2':
+        report_type = 'inventory'
+    else:
+        print(INVALID_CHOICE_MSG)
+        return False
+    
+    # select file format
+    print("\nSelect export format:")
+    print("[1] CSV")
+    print("[2] JSON")
+    format_choice = input(ENTER_CHOICE_PROMPT).strip()
+    
+    if format_choice == '1':
+        file_format = 'csv'
+        extension = '.csv'
+    elif format_choice == '2':
+        file_format = 'json'
+        extension = '.json'
+    else:
+        print(INVALID_CHOICE_MSG)
+        return False
+    
+    # get filename from user
+    filename = input("Enter filename (without extension, e.g. 'report'): ").strip()
+    
+    if not filename:
+        print("Error: Filename cannot be empty.")
+        return False
+    
+    # add extension if not present
+    full_filename = filename if filename.endswith(extension) else filename + extension
+    
+    # perform the export
+    success, message = export_report(report_type, file_format, full_filename)
+    
+    if success:
+        print(f"\n{message}")
+        return True
+    
+    print(f"\nError: {message}")
+    return False
+
+
 def show_manager_menu():
     """display menu for manager role"""
     print("\n--- MANAGER MENU ---")
@@ -71,6 +153,7 @@ def show_manager_menu():
         print("[3] View Sales History (Sales Management)")
         print("[4] View Transaction Details (Sales Management)")
         print("[5] View Total Inventory Value (Reporting & Analytics)")
+        print("[6] Export Report (Reporting & Analytics)")
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -78,15 +161,7 @@ def show_manager_menu():
             add_new_product()
         elif choice == '2':
             # scrum-58: hook up low stock report (SCRUM-14)
-            threshold = input("Enter stock threshold (default 20): ").strip()
-            try:
-                threshold = int(threshold) if threshold else 20
-                report = generate_low_stock_report(threshold)
-                print(report)
-            except ValueError:
-                print("Invalid threshold. Using default of 20.")
-                report = generate_low_stock_report(20)
-                print(report)
+            handle_view_low_stock_report()
         elif choice == '3':
             # scrum-15: view sales history (future sprint)
             print("Sales history function not yet implemented.")
@@ -96,11 +171,15 @@ def show_manager_menu():
         elif choice == '5':
             # view total inventory value report
             view_total_inventory_value()
+        elif choice == '6':
+            # scrum-16: export report to file
+            handle_export_report()
         elif choice == '0':
             print("Logging out...")
             break
         else:
             print(INVALID_CHOICE_MSG)
+
 
 def show_clerk_menu():
     """display menu for clerk role"""
@@ -111,6 +190,7 @@ def show_clerk_menu():
         print("[3] View Product Stock (Inventory Tracking)")
         print("[4] Log Product Loss (Inventory Tracking)")
         print("[5] View Transaction Details (Sales Management)")
+        print("[6] View Last Sale (Sales Management)")  # scrum-74: added menu option
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -126,11 +206,15 @@ def show_clerk_menu():
         elif choice == '5':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
+        elif choice == '6':
+            # scrum-74: call new last sale function
+            view_last_transaction()
         elif choice == '0':
             print("Logging out...")
             break
         else:
             print(INVALID_CHOICE_MSG)
+
 
 def main():
     """
@@ -176,6 +260,7 @@ def main():
 
         else:
             print(INVALID_CHOICE_MSG)
+
 
 if __name__ == "__main__":
     main()

@@ -213,7 +213,6 @@ def test_log_product_loss_invalid_quantity_value_error(mock_input):
     
     result = log_product_loss()
     assert result is False
-
     
     # Verify stock wasn't changed
     current = get_stock_by_id(1)
