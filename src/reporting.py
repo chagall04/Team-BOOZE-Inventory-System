@@ -8,7 +8,21 @@ User Stories SCRUM-14, SCRUM-15, and SCRUM-16 are in the
 "Upcoming" backlog and will be implemented in a future sprint.
 """
 
-from .database_manager import get_low_stock_report
+from .database_manager import get_low_stock_report, get_total_inventory_value
+
+
+def format_currency(value):
+    """
+    format a numeric value as currency with Euro symbol and two decimal places
+    
+    args:
+        value: numeric value to format (int or float)
+    
+    returns:
+        formatted string with Euro symbol and two decimals (e.g., "€1,250.00")
+    """
+    # format with thousands separator and two decimal places
+    return f"€{value:,.2f}"
 
 
 def generate_low_stock_report(threshold=20):
@@ -58,3 +72,24 @@ def generate_low_stock_report(threshold=20):
     report += "=" * 70 + "\n"
     
     return report
+
+
+def view_total_inventory_value():
+    """
+    generate and display total inventory value report
+    queries database for total value of all products in stock
+    
+    displays formatted report to user showing total inventory value
+    """
+    # query database for total value
+    total_value = get_total_inventory_value()
+    
+    # format report
+    report = "\n"
+    report += "=" * 70 + "\n"
+    report += "TOTAL INVENTORY VALUE REPORT\n"
+    report += "=" * 70 + "\n"
+    report += f"\nTotal value of all products in stock: {format_currency(total_value)}\n"
+    report += "=" * 70 + "\n"
+    
+    print(report)

@@ -249,6 +249,49 @@ def get_low_stock_report(threshold):
     finally:
         conn.close()
 
+def get_all_products():
+    """
+    scrum-45: retrieve all products from inventory
+    
+    returns:
+        list of dicts with complete product info
+        each dict contains: id, name, brand, type, abv, volume_ml, 
+                           origin_country, price, quantity_on_hand, description
+        returns empty list on error
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT id, name, brand, type, abv, volume_ml, origin_country, 
+                      price, quantity_on_hand, description 
+               FROM booze 
+               ORDER BY name ASC"""
+        )
+        results = cursor.fetchall()
+
+        # convert Row objects to dictionaries
+        products = []
+        for row in results:
+            products.append({
+                "id": row["id"],
+                "name": row["name"],
+                "brand": row["brand"],
+                "type": row["type"],
+                "abv": row["abv"],
+                "volume_ml": row["volume_ml"],
+                "origin_country": row["origin_country"],
+                "price": row["price"],
+                "quantity_on_hand": row["quantity_on_hand"],
+                "description": row["description"]
+            })
+
+        return products
+    except sqlite3.Error:
+        return []
+    finally:
+        conn.close()
+
 
 # transaction detail functions (scrum-60)
 def get_transaction_by_id(transaction_id):
@@ -400,43 +443,105 @@ def process_sale_transaction(cart_items, total_amount):
     finally:
         conn.close()
 
-def search_products_by_term(search_term):
-    """
-    scrum-67: search for products by name or brand
+def update_product_details(product_id, data):
+    """Update existing product details in the database
     
-    args:
-        search_term: string to search for
+    Args:
+        product_id (int): ID of the product to update
+        data (dict): Dictionary containing fields to update. Valid keys are:
+            - name (str)
+            - brand (str)
+            - type (str)
+            - abv (float)
+            - volume_ml (int)
+            - origin_country (str)
+            - price (float)
+            - quantity_on_hand (int)
+            - description (str)
+            
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Build update query dynamically based on provided fields
+    valid_fields = [
+        'name', 'brand', 'type', 'abv', 'volume_ml',
+        'origin_country', 'price', 'quantity_on_hand', 'description'
+    ]
+    
+    # Filter out invalid fields, but keep None values to allow clearing optional fields
+    update_data = {k: v for k, v in data.items() if k in valid_fields}
+    
+    if not update_data:
+        conn.close()
+        return False, "No valid fields to update"
+    
+    try:
+        # Construct UPDATE query
+        set_clause = ", ".join(f"{field} = ?" for field in update_data.keys())
+        query = f"UPDATE booze SET {set_clause} WHERE id = ?"
         
+        # Execute query with values
+        values = list(update_data.values()) + [product_id]
+        cursor.execute(query, values)
+        
+        if cursor.rowcount == 0:
+            return False, "Product not found"
+            
+        conn.commit()
+        return True, "Product updated successfully"
+        
+    except sqlite3.Error as e:
+        return False, f"Database error: {str(e)}"
+    finally:
+        conn.close()
+
+
+def update_product(product_id, data):
+    """Alias for update_product_details for backward compatibility"""
+    return update_product_details(product_id, data)
+
+
+def get_total_inventory_value():
+    """
+    calculate total inventory value by multiplying price by stock for all products
+    
     returns:
-        list of dicts with product info
+        float: total value of all products in stock (price * quantity_on_hand)
+               returns 0.00 if database is empty or result is NULL
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Add wildcards for partial matching
-        term_pattern = f"%{search_term}%"
+        cursor.execute("SELECT SUM(price * quantity_on_hand) FROM booze")
+        result = cursor.fetchone()
         
-        cursor.execute(
-            """SELECT id, name, brand, quantity_on_hand, price 
-               FROM booze 
-               WHERE name LIKE ? OR brand LIKE ?
-               ORDER BY name ASC""",
-            (term_pattern, term_pattern)
-        )
+        # handle NULL result (empty database or all products have NULL price/quantity)
+        if result is None or result[0] is None:
+            return 0.00
+        
+        return float(result[0])
+    except sqlite3.Error:
+        return 0.00
+    finally:
+        conn.close()
+
+
+def search_products_by_term(search_term):
+    """Search products by name or brand"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT id, name, brand, quantity_on_hand, price
+            FROM booze
+            WHERE name LIKE ? OR brand LIKE ?
+            ORDER BY name
+        """, (f"%{search_term}%", f"%{search_term}%"))
         results = cursor.fetchall()
-        
-        # convert Row objects to dictionaries
-        search_results = []
-        for row in results:
-            search_results.append({
-                "id": row["id"],
-                "name": row["name"],
-                "brand": row["brand"],
-                "quantity": row["quantity_on_hand"],
-                "price": row["price"]
-            })
-        
-        return search_results
+        return [dict(row) for row in results]
     except sqlite3.Error:
         return []
     finally:

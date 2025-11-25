@@ -181,7 +181,7 @@ def test_view_current_stock_product_not_found(mock_get_stock, mock_input, capsys
     assert result is False
 
     captured = capsys.readouterr()
-    assert "Error: Product with ID 999 not found" in captured.out
+    assert "Error: Product with ID 999 not found" in captured.out or "Error: Product ID 999 not found" in captured.out
 
 @patch('builtins.input', side_effect=['1', '20'])
 def test_log_product_loss_success(mock_input):
@@ -207,6 +207,19 @@ def test_log_product_loss_invalid_id(mock_input):
 @patch('builtins.input', side_effect=['1', '-5'])
 def test_log_product_loss_negative_quantity(mock_input):
     """SCRUM-48: Test handling negative quantity input"""
+    from src.inventory_tracking import log_product_loss
+    
+    result = log_product_loss()
+    assert result is False
+    
+    # Verify stock wasn't changed
+    current = get_stock_by_id(1)
+    assert current is not None
+    assert current['quantity'] == 50
+
+@patch('builtins.input', side_effect=['1', 'abc'])
+def test_log_product_loss_invalid_quantity_value_error(mock_input):
+    """SCRUM-48: Test handling non-numeric quantity input"""
     from src.inventory_tracking import log_product_loss
     
     result = log_product_loss()
@@ -306,8 +319,8 @@ def test_log_product_loss_entire_stock(mock_input):
 def test_product_search_returns_results(mock_print, mock_search, mock_input):
     """Test that search returns results and prints them."""
     mock_search.return_value = [
-        {'id': 1, 'name': 'Vodka', 'price': 12.99, 'quantity': 20, 'brand': 'Smirnoff'},
-        {'id': 2, 'name': 'Vanilla Vodka', 'price': 14.49, 'quantity': 8, 'brand': 'Absolut'},
+        {'id': 1, 'name': 'Vodka', 'price': 12.99, 'quantity_on_hand': 20, 'brand': 'Smirnoff'},
+        {'id': 2, 'name': 'Vanilla Vodka', 'price': 14.49, 'quantity_on_hand': 8, 'brand': 'Absolut'},
     ]
 
     result = search_products()

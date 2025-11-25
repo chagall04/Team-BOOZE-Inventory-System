@@ -230,6 +230,18 @@ class TestManagerMenu:
         
         mock_input.assert_called()
     
+    @patch('src.app.view_total_inventory_value')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_manager_menu_view_total_inventory_value(self, mock_print, mock_input, mock_view_total):
+        """test manager can access total inventory value report"""
+        mock_input.side_effect = ["5", "0"]
+        
+        show_manager_menu()
+        
+        mock_view_total.assert_called_once()
+        mock_input.assert_called()
+    
     @patch('builtins.input')
     @patch('builtins.print')
     def test_manager_menu_invalid_choice(self, mock_print, mock_input):
@@ -325,17 +337,30 @@ class TestClerkMenu:
         mock_view_txn.assert_called_once()
         mock_input.assert_called()
 
+    @patch('src.app.view_last_transaction')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_clerk_menu_view_last_sale(self, mock_print, mock_input, mock_view_last):
+        """test clerk can access view last sale (SCRUM-71)"""
+        mock_input.side_effect = ["6", "0"]
+        
+        show_clerk_menu()
+        
+        mock_view_last.assert_called_once()
+        mock_input.assert_called()
+
     @patch('src.app.search_products')
     @patch('builtins.input')
     @patch('builtins.print')
     def test_clerk_menu_search_products(self, mock_print, mock_input, mock_search):
-        """test clerk can access search products (scrum-69)"""
-        mock_input.side_effect = ["6", "0"]
+        """test clerk can access search products (SCRUM-66)"""
+        mock_input.side_effect = ["7", "0"]
         
         show_clerk_menu()
         
         mock_search.assert_called_once()
         mock_input.assert_called()
+
 
 class TestManagerMenuTransactionDetails:
     """test class for manager menu transaction details (scrum-64)"""
