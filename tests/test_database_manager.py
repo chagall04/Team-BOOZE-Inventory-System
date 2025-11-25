@@ -1311,3 +1311,85 @@ class TestGetAllTransactions:
         assert result[0]["id"] == 1
         assert result[0]["total_amount"] == pytest.approx(25.99)
         mock_conn.close.assert_called_once()
+
+
+# scrum-66: search products by term tests
+class TestSearchProductsByTerm:
+    """test class for search_products_by_term function"""
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_finds_by_name(self, mock_get_db):
+        """test searching products by name"""
+        from src.database_manager import search_products_by_term
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_rows = [
+            {"id": 1, "name": "Jameson Whiskey", "brand": "Jameson", 
+             "quantity_on_hand": 50, "price": 25.99}
+        ]
+        mock_cursor.fetchall.return_value = mock_rows
+        
+        result = search_products_by_term("Jameson")
+        
+        assert len(result) == 1
+        assert result[0]["name"] == "Jameson Whiskey"
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_finds_by_brand(self, mock_get_db):
+        """test searching products by brand"""
+        from src.database_manager import search_products_by_term
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_rows = [
+            {"id": 1, "name": "Irish Whiskey", "brand": "Jameson", 
+             "quantity_on_hand": 50, "price": 25.99},
+            {"id": 2, "name": "Gold Reserve", "brand": "Jameson", 
+             "quantity_on_hand": 30, "price": 45.00}
+        ]
+        mock_cursor.fetchall.return_value = mock_rows
+        
+        result = search_products_by_term("Jameson")
+        
+        assert len(result) == 2
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_no_results(self, mock_get_db):
+        """test search with no matching products"""
+        from src.database_manager import search_products_by_term
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = []
+        
+        result = search_products_by_term("NonExistent")
+        
+        assert not result
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_database_error(self, mock_get_db):
+        """test database error returns empty list"""
+        from src.database_manager import search_products_by_term
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
+        
+        result = search_products_by_term("test")
+        
+        assert not result
+        mock_conn.close.assert_called_once()
