@@ -1,6 +1,9 @@
 # For password hashing
 bcrypt>=4.0.0
 
+# For colored CLI output
+colorama>=0.4.6
+
 # For testing and coverage reports
 pytest
 pytest-cov

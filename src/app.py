@@ -4,6 +4,8 @@
 This module handles the user interface and menu navigation.
 """
 
+from colorama import init, Fore, Style
+
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
 from .sales import (
@@ -19,9 +21,12 @@ from .reporting import (
     export_report
 )
 
+# initialize colorama for windows support
+init()
+
 # menu constants
-ENTER_CHOICE_PROMPT = "Enter choice: "
-INVALID_CHOICE_MSG = "Invalid choice, please try again."
+ENTER_CHOICE_PROMPT = f"{Fore.YELLOW}Enter choice: {Style.RESET_ALL}"
+INVALID_CHOICE_MSG = f"{Fore.RED}Invalid choice, please try again.{Style.RESET_ALL}"
 
 
 def show_account_menu():
@@ -29,46 +34,46 @@ def show_account_menu():
     display account management menu
     scrum-17: create, delete accounts
     """
-    print("\n--- Account Management ---")
-    print("[1] Login")
-    print("[2] Create Account")
-    print("[3] Delete Account")
-    print("[0] Exit")
+    print(f"\n{Fore.CYAN}--- Account Management ---{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}[1]{Style.RESET_ALL} Login")
+    print(f"{Fore.WHITE}[2]{Style.RESET_ALL} Create Account")
+    print(f"{Fore.WHITE}[3]{Style.RESET_ALL} Delete Account")
+    print(f"{Fore.WHITE}[0]{Style.RESET_ALL} Exit")
     choice = input(ENTER_CHOICE_PROMPT)
     return choice
 
 
 def handle_create_account():
     """handle account creation flow"""
-    print("\n=== Create New Account ===")
-    username = input("Username (min 3 characters): ")
-    password = input("Password (min 6 characters): ")
-    print("Role options: Manager, Clerk")
-    role = input("Role: ")
+    print(f"\n{Fore.CYAN}=== Create New Account ==={Style.RESET_ALL}")
+    username = input(f"{Fore.YELLOW}Username (min 3 characters): {Style.RESET_ALL}")
+    password = input(f"{Fore.YELLOW}Password (min 6 characters): {Style.RESET_ALL}")
+    print(f"Role options: {Fore.MAGENTA}Manager{Style.RESET_ALL}, {Fore.BLUE}Clerk{Style.RESET_ALL}")
+    role = input(f"{Fore.YELLOW}Role: {Style.RESET_ALL}")
 
     success, message = create_account(username, password, role)
 
     if success:
-        print(f"\n{message}")
+        print(f"\n{Fore.GREEN}{message}{Style.RESET_ALL}")
         return True
 
-    print(f"\nError: {message}")
+    print(f"\n{Fore.RED}Error: {message}{Style.RESET_ALL}")
     return False
 
 
 def handle_delete_account():
     """handle account deletion flow"""
-    print("\n=== Delete Account ===")
-    username = input("Username: ")
-    password = input("Password: ")
+    print(f"\n{Fore.CYAN}=== Delete Account ==={Style.RESET_ALL}")
+    username = input(f"{Fore.YELLOW}Username: {Style.RESET_ALL}")
+    password = input(f"{Fore.YELLOW}Password: {Style.RESET_ALL}")
 
     success, message = delete_account(username, password)
 
     if success:
-        print(f"\n{message}")
+        print(f"\n{Fore.GREEN}{message}{Style.RESET_ALL}")
         return True
 
-    print(f"\nError: {message}")
+    print(f"\n{Fore.RED}Error: {message}{Style.RESET_ALL}")
     return False
 
 
@@ -77,11 +82,11 @@ def handle_view_low_stock_report():
     scrum-58: handle low stock report display
     prompts for threshold and displays report
     """
-    threshold = input("Enter stock threshold (default 20): ").strip()
+    threshold = input(f"{Fore.YELLOW}Enter stock threshold (default 20): {Style.RESET_ALL}").strip()
     try:
         threshold = int(threshold) if threshold else 20
     except ValueError:
-        print("Invalid threshold. Using default of 20.")
+        print(f"{Fore.YELLOW}Invalid threshold. Using default of 20.{Style.RESET_ALL}")
         threshold = 20
     
     report = generate_low_stock_report(threshold)
@@ -96,12 +101,12 @@ def handle_export_report():
     returns:
         bool: True if export successful, False otherwise
     """
-    print("\n=== Export Report ===")
+    print(f"\n{Fore.CYAN}=== Export Report ==={Style.RESET_ALL}")
     
     # select report type
-    print("\nSelect report to export:")
-    print("[1] Low Stock Report")
-    print("[2] Inventory Report")
+    print(f"\n{Fore.WHITE}Select report to export:{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}[1]{Style.RESET_ALL} Low Stock Report")
+    print(f"{Fore.WHITE}[2]{Style.RESET_ALL} Inventory Report")
     report_choice = input(ENTER_CHOICE_PROMPT).strip()
     
     if report_choice == '1':
@@ -113,9 +118,9 @@ def handle_export_report():
         return False
     
     # select file format
-    print("\nSelect export format:")
-    print("[1] CSV")
-    print("[2] JSON")
+    print(f"\n{Fore.WHITE}Select export format:{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}[1]{Style.RESET_ALL} CSV")
+    print(f"{Fore.WHITE}[2]{Style.RESET_ALL} JSON")
     format_choice = input(ENTER_CHOICE_PROMPT).strip()
     
     if format_choice == '1':
@@ -129,10 +134,10 @@ def handle_export_report():
         return False
     
     # get filename from user
-    filename = input("Enter filename (without extension, e.g. 'report'): ").strip()
+    filename = input(f"{Fore.YELLOW}Enter filename (without extension): {Style.RESET_ALL}").strip()
     
     if not filename:
-        print("Error: Filename cannot be empty.")
+        print(f"{Fore.RED}Error: Filename cannot be empty.{Style.RESET_ALL}")
         return False
     
     # add extension if not present
@@ -142,24 +147,24 @@ def handle_export_report():
     success, message = export_report(report_type, file_format, full_filename)
     
     if success:
-        print(f"\n{message}")
+        print(f"\n{Fore.GREEN}{message}{Style.RESET_ALL}")
         return True
     
-    print(f"\nError: {message}")
+    print(f"\n{Fore.RED}Error: {message}{Style.RESET_ALL}")
     return False
 
 
 def show_manager_menu():
     """display menu for manager role"""
-    print("\n--- MANAGER MENU ---")
+    print(f"\n{Fore.MAGENTA}--- MANAGER MENU ---{Style.RESET_ALL}")
     while True:
-        print("\n[1] Add/Update Product (Product Management)")
-        print("[2] View Inventory Report (Reporting & Analytics)")
-        print("[3] View Sales History (Sales Management)")
-        print("[4] View Transaction Details (Sales Management)")
-        print("[5] View Total Inventory Value (Reporting & Analytics)")
-        print("[6] Export Report (Reporting & Analytics)")
-        print("[0] Log Out")
+        print(f"\n{Fore.WHITE}[1]{Style.RESET_ALL} Add/Update Product {Fore.CYAN}(Product Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[2]{Style.RESET_ALL} View Inventory Report {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[3]{Style.RESET_ALL} View Sales History {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[4]{Style.RESET_ALL} View Transaction Details {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[5]{Style.RESET_ALL} View Total Inventory Value {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[6]{Style.RESET_ALL} Export Report {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[0]{Style.RESET_ALL} Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
         if choice == '1':
@@ -180,7 +185,7 @@ def show_manager_menu():
             # scrum-16: export report to file
             handle_export_report()
         elif choice == '0':
-            print("Logging out...")
+            print(f"{Fore.YELLOW}Logging out...{Style.RESET_ALL}")
             break
         else:
             print(INVALID_CHOICE_MSG)
@@ -188,15 +193,15 @@ def show_manager_menu():
 
 def show_clerk_menu():
     """display menu for clerk role"""
-    print("\n--- CLERK MENU ---")
+    print(f"\n{Fore.BLUE}--- CLERK MENU ---{Style.RESET_ALL}")
     while True:
-        print("\n[1] Record a Sale (Sales Management)")
-        print("[2] Receive New Stock (Inventory Tracking)")
-        print("[3] View Product Stock (Inventory Tracking)")
-        print("[4] Log Product Loss (Inventory Tracking)")
-        print("[5] View Transaction Details (Sales Management)")
-        print("[6] View Last Sale (Sales Management)")  # scrum-74: added menu option
-        print("[0] Log Out")
+        print(f"\n{Fore.WHITE}[1]{Style.RESET_ALL} Record a Sale {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[2]{Style.RESET_ALL} Receive New Stock {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[3]{Style.RESET_ALL} View Product Stock {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[4]{Style.RESET_ALL} Log Product Loss {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[5]{Style.RESET_ALL} View Transaction Details {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[6]{Style.RESET_ALL} View Last Sale {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[0]{Style.RESET_ALL} Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
         if choice == '1':
@@ -215,7 +220,7 @@ def show_clerk_menu():
             # scrum-74: call new last sale function
             view_last_transaction()
         elif choice == '0':
-            print("Logging out...")
+            print(f"{Fore.YELLOW}Logging out...{Style.RESET_ALL}")
             break
         else:
             print(INVALID_CHOICE_MSG)
@@ -227,29 +232,29 @@ def main():
     handles scrum-22: integrate login prompt and role-based access
     scrum-17: account management integration
     """
-    print("--- Welcome to the Team-BOOZE Inventory Tracking System ---")
+    print(f"{Fore.GREEN}--- Welcome to the Team-BOOZE Inventory Tracking System ---{Style.RESET_ALL}")
 
     while True:
         choice = show_account_menu()
 
         if choice == '1':
             # login flow
-            username = input("\nUsername: ")
-            password = input("Password: ")
+            username = input(f"\n{Fore.YELLOW}Username: {Style.RESET_ALL}")
+            password = input(f"{Fore.YELLOW}Password: {Style.RESET_ALL}")
 
             # delegate login logic to auth module (scrum-21)
             role = login(username, password)
 
             # route to correct menu based on role
             if role == "Manager":
-                print(f"\nLogin successful. Welcome, {username} (Manager).")
+                print(f"\n{Fore.GREEN}Login successful. Welcome, {username} ({Fore.MAGENTA}Manager{Fore.GREEN}).{Style.RESET_ALL}")
                 show_manager_menu()
             elif role == "Clerk":
-                print(f"\nLogin successful. Welcome, {username} (Clerk).")
+                print(f"\n{Fore.GREEN}Login successful. Welcome, {username} ({Fore.BLUE}Clerk{Fore.GREEN}).{Style.RESET_ALL}")
                 show_clerk_menu()
             else:
                 # fulfills scrum-17 acceptance criteria
-                print("Access denied: Invalid username or password.")
+                print(f"{Fore.RED}Access denied: Invalid username or password.{Style.RESET_ALL}")
 
         elif choice == '2':
             # create account flow
@@ -260,7 +265,7 @@ def main():
             handle_delete_account()
 
         elif choice == '0':
-            print("Goodbye!")
+            print(f"{Fore.GREEN}Goodbye!{Style.RESET_ALL}")
             break
 
         else:

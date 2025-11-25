@@ -4,10 +4,17 @@ Tests the receive_new_stock function and its dependent database functions
 """
 
 import os
+import re
 import sqlite3
 from unittest.mock import patch
 import pytest
 from src.database_manager import get_stock_by_id, adjust_stock
+
+
+def strip_ansi(text):
+    """remove ansi color codes from text for test assertions"""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 
 @pytest.fixture(autouse=True)
@@ -148,8 +155,9 @@ def test_view_current_stock_success(mock_input, capsys):
     
     # Check the output format
     captured = capsys.readouterr()
-    assert "Product Name: Test Product" in captured.out
-    assert "Current Stock: 50 units" in captured.out
+    output = strip_ansi(captured.out)
+    assert "Product Name: Test Product" in output
+    assert "Current Stock: 50 units" in output
 
 @patch('builtins.input', side_effect=['abc'])
 def test_view_current_stock_invalid_id(mock_input, capsys):

@@ -1,9 +1,16 @@
 """Tests for product management functionality including validation and addition."""
 
+import re
 from unittest.mock import patch, MagicMock
 import sqlite3
 import pytest
 from src.product_management import add_new_product, validate_product_data
+
+
+def strip_ansi(text):
+    """remove ansi color codes from text for test assertions"""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 # Test data for validation scenarios
 @pytest.mark.parametrize("test_id, name, brand, type_, price, quantity, abv, volume_ml, expected_valid, error_message", [
@@ -229,7 +236,7 @@ def test_validate_numeric_value_direct():
     assert errors == ["Custom Field must be a valid number"]
     assert value is None
 
-def test_add_new_product_validation_failure():
+def test_add_new_product_validation_failure(capsys):
     """Test validation failure in add_new_product"""
     mock_inputs = [
         "",  # Empty name (will fail validation)
@@ -243,14 +250,15 @@ def test_add_new_product_validation_failure():
         ""
     ]
 
-    with patch('builtins.input', side_effect=mock_inputs), \
-         patch('builtins.print') as mock_print:
+    with patch('builtins.input', side_effect=mock_inputs):
         result = add_new_product()
         assert result is False
-        mock_print.assert_any_call("\nError: Invalid product data:")
-        mock_print.assert_any_call("- Product name is required")
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        assert "Error: Invalid product data:" in output
+        assert "Product name is required" in output
 
-def test_add_new_product_db_failure():
+def test_add_new_product_db_failure(capsys):
     """Test database failure in add_new_product"""
     mock_inputs = [
         "Test Beer",
@@ -265,11 +273,12 @@ def test_add_new_product_db_failure():
     ]
 
     with patch('builtins.input', side_effect=mock_inputs), \
-         patch('src.product_management.insert_product', return_value=(False, "Database error")), \
-         patch('builtins.print') as mock_print:
+         patch('src.product_management.insert_product', return_value=(False, "Database error")):
         result = add_new_product()
         assert result is False
-        mock_print.assert_any_call("\nError: Failed to add product - Database error")
+        captured = capsys.readouterr()
+        output = strip_ansi(captured.out)
+        assert "Error: Failed to add product - Database error" in output
 
 
 # SCRUM-6 Update Product Tests
@@ -965,36 +974,37 @@ def test_view_all_products_displays_all_products(capsys, monkeypatch):
     result = view_all_products()
     
     captured = capsys.readouterr()
+    output = strip_ansi(captured.out)
     
     # Verify header is displayed
-    assert "=== All Products ===" in captured.out
-    assert "ID" in captured.out
-    assert "Name" in captured.out
-    assert "Brand" in captured.out
-    assert "Price (€)" in captured.out
-    assert "Stock" in captured.out
+    assert "=== All Products ===" in output
+    assert "ID" in output
+    assert "Name" in output
+    assert "Brand" in output
+    assert "Price" in output
+    assert "Stock" in output
     
     # Verify all products are displayed
-    assert "1" in captured.out
-    assert "Jameson Irish Whiskey" in captured.out
-    assert "Jameson" in captured.out
-    assert "€25.99" in captured.out
-    assert "50" in captured.out
+    assert "1" in output
+    assert "Jameson Irish Whiskey" in output
+    assert "Jameson" in output
+    assert "€25.99" in output
+    assert "50" in output
     
-    assert "2" in captured.out
-    assert "Guinness Draught" in captured.out
-    assert "Guinness" in captured.out
-    assert "€3.50" in captured.out
-    assert "120" in captured.out
+    assert "2" in output
+    assert "Guinness Draught" in output
+    assert "Guinness" in output
+    assert "€3.50" in output
+    assert "120" in output
     
-    assert "3" in captured.out
-    assert "Baileys Irish Cream" in captured.out
-    assert "Baileys" in captured.out
-    assert "€18.75" in captured.out
-    assert "30" in captured.out
+    assert "3" in output
+    assert "Baileys Irish Cream" in output
+    assert "Baileys" in output
+    assert "€18.75" in output
+    assert "30" in output
     
     # Verify total count
-    assert "Total products: 3" in captured.out
+    assert "Total products: 3" in output
     
     # Verify function returns True
     assert result is True
@@ -1042,13 +1052,14 @@ def test_view_all_products_single_product(capsys, monkeypatch):
     result = view_all_products()
     
     captured = capsys.readouterr()
+    output = strip_ansi(captured.out)
     
-    assert "42" in captured.out
-    assert "Test Vodka" in captured.out
-    assert "Test Brand" in captured.out
-    assert "€15.00" in captured.out
-    assert "10" in captured.out
-    assert "Total products: 1" in captured.out
+    assert "42" in output
+    assert "Test Vodka" in output
+    assert "Test Brand" in output
+    assert "€15.00" in output
+    assert "10" in output
+    assert "Total products: 1" in output
     assert result is True
 
 

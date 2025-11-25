@@ -12,6 +12,8 @@ import csv
 import json
 import os
 
+from colorama import Fore, Style
+
 from .database_manager import get_low_stock_report, get_total_inventory_value, get_all_products
 
 # scrum-16: protected filenames that cannot be overwritten
@@ -60,18 +62,18 @@ def generate_low_stock_report(threshold=20):
     
     # format report header
     report = "\n"
-    report += "=" * 70 + "\n"
+    report += f"{Fore.CYAN}" + "=" * 70 + "\n"
     report += f"LOW STOCK REPORT (Threshold: {threshold} units)\n"
-    report += "=" * 70 + "\n"
+    report += "=" * 70 + f"{Style.RESET_ALL}\n"
     
     # if no low stock products, report accordingly
     if not low_stock_products:
-        report += "\nGood news! All products are above the reorder threshold.\n"
-        report += "=" * 70 + "\n"
+        report += f"\n{Fore.GREEN}Good news! All products are above the reorder threshold.{Style.RESET_ALL}\n"
+        report += f"{Fore.CYAN}" + "=" * 70 + f"{Style.RESET_ALL}\n"
         return report
     
     # format column headers
-    report += f"\n{'ID':<5} {'Product Name':<25} {'Brand':<15} {'Stock':<8} {'Price':<10}\n"
+    report += f"\n{Fore.WHITE}{'ID':<5} {'Product Name':<25} {'Brand':<15} {'Stock':<8} {'Price':<10}{Style.RESET_ALL}\n"
     report += "-" * 70 + "\n"
     
     # format each product row
@@ -82,12 +84,18 @@ def generate_low_stock_report(threshold=20):
         quantity = product["quantity_on_hand"]
         price = product["price"]
         
-        report += f"{product_id:<5} {name:<25} {brand:<15} {quantity:<8} €{price:<9.2f}\n"
+        # color stock red if very low (below 5), yellow if low
+        if quantity < 5:
+            stock_color = Fore.RED
+        else:
+            stock_color = Fore.YELLOW
+        
+        report += f"{product_id:<5} {name:<25} {brand:<15} {stock_color}{quantity:<8}{Style.RESET_ALL} {Fore.GREEN}€{price:<9.2f}{Style.RESET_ALL}\n"
     
     report += "-" * 70 + "\n"
-    report += f"\nTotal products below threshold: {len(low_stock_products)}\n"
-    report += "Recommendation: Reorder products listed above.\n"
-    report += "=" * 70 + "\n"
+    report += f"\n{Fore.YELLOW}Total products below threshold: {len(low_stock_products)}{Style.RESET_ALL}\n"
+    report += f"{Fore.YELLOW}Recommendation: Reorder products listed above.{Style.RESET_ALL}\n"
+    report += f"{Fore.CYAN}" + "=" * 70 + f"{Style.RESET_ALL}\n"
     
     return report
 
@@ -104,11 +112,11 @@ def view_total_inventory_value():
     
     # format report
     report = "\n"
-    report += "=" * 70 + "\n"
+    report += f"{Fore.CYAN}" + "=" * 70 + "\n"
     report += "TOTAL INVENTORY VALUE REPORT\n"
-    report += "=" * 70 + "\n"
-    report += f"\nTotal value of all products in stock: {format_currency(total_value)}\n"
-    report += "=" * 70 + "\n"
+    report += "=" * 70 + f"{Style.RESET_ALL}\n"
+    report += f"\nTotal value of all products in stock: {Fore.GREEN}{format_currency(total_value)}{Style.RESET_ALL}\n"
+    report += f"{Fore.CYAN}" + "=" * 70 + f"{Style.RESET_ALL}\n"
     
     print(report)
 
