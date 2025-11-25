@@ -437,52 +437,52 @@ class TestHandleExportReport:
     @patch('builtins.print')
     def test_handle_export_report_low_stock_csv_success(self, mock_print, mock_input, mock_export):
         """test successful low stock csv export"""
-        mock_input.side_effect = ["1", "1", "my_report"]
+        mock_input.side_effect = ["1", "15", "1", "my_report"]  # report, threshold, format, filename
         mock_export.return_value = (True, "Successfully exported to my_report.csv")
         
         result = handle_export_report()
         
         assert result is True
-        mock_export.assert_called_once_with('low_stock', 'csv', 'my_report.csv')
+        mock_export.assert_called_once_with('low_stock', 'csv', 'my_report.csv', 15)
     
     @patch('src.app.export_report')
     @patch('builtins.input')
     @patch('builtins.print')
     def test_handle_export_report_low_stock_json_success(self, mock_print, mock_input, mock_export):
-        """test successful low stock json export"""
-        mock_input.side_effect = ["1", "2", "my_report"]
+        """test successful low stock json export with default threshold"""
+        mock_input.side_effect = ["1", "", "2", "my_report"]  # report, empty threshold (default), format, filename
         mock_export.return_value = (True, "Successfully exported to my_report.json")
         
         result = handle_export_report()
         
         assert result is True
-        mock_export.assert_called_once_with('low_stock', 'json', 'my_report.json')
+        mock_export.assert_called_once_with('low_stock', 'json', 'my_report.json', 20)
     
     @patch('src.app.export_report')
     @patch('builtins.input')
     @patch('builtins.print')
     def test_handle_export_report_inventory_csv_success(self, mock_print, mock_input, mock_export):
         """test successful inventory csv export"""
-        mock_input.side_effect = ["2", "1", "inventory_export"]
+        mock_input.side_effect = ["2", "1", "inventory_export"]  # no threshold prompt for inventory
         mock_export.return_value = (True, "Successfully exported")
         
         result = handle_export_report()
         
         assert result is True
-        mock_export.assert_called_once_with('inventory', 'csv', 'inventory_export.csv')
+        mock_export.assert_called_once_with('inventory', 'csv', 'inventory_export.csv', 20)
     
     @patch('src.app.export_report')
     @patch('builtins.input')
     @patch('builtins.print')
     def test_handle_export_report_inventory_json_success(self, mock_print, mock_input, mock_export):
         """test successful inventory json export"""
-        mock_input.side_effect = ["2", "2", "inventory_export"]
+        mock_input.side_effect = ["2", "2", "inventory_export"]  # no threshold prompt for inventory
         mock_export.return_value = (True, "Successfully exported")
         
         result = handle_export_report()
         
         assert result is True
-        mock_export.assert_called_once_with('inventory', 'json', 'inventory_export.json')
+        mock_export.assert_called_once_with('inventory', 'json', 'inventory_export.json', 20)
     
     @patch('builtins.input')
     @patch('builtins.print')
@@ -498,7 +498,7 @@ class TestHandleExportReport:
     @patch('builtins.print')
     def test_handle_export_report_invalid_format_choice(self, mock_print, mock_input):
         """test invalid format choice"""
-        mock_input.side_effect = ["1", "9"]
+        mock_input.side_effect = ["1", "20", "9"]  # report, threshold, invalid format
         
         result = handle_export_report()
         
@@ -508,7 +508,7 @@ class TestHandleExportReport:
     @patch('builtins.print')
     def test_handle_export_report_empty_filename(self, mock_print, mock_input):
         """test empty filename returns error"""
-        mock_input.side_effect = ["1", "1", ""]
+        mock_input.side_effect = ["1", "20", "1", ""]  # report, threshold, format, empty filename
         
         result = handle_export_report()
         
@@ -519,7 +519,7 @@ class TestHandleExportReport:
     @patch('builtins.print')
     def test_handle_export_report_export_failure(self, mock_print, mock_input, mock_export):
         """test export failure returns false"""
-        mock_input.side_effect = ["1", "1", "report"]
+        mock_input.side_effect = ["1", "20", "1", "report"]  # report, threshold, format, filename
         mock_export.return_value = (False, "No data to export")
         
         result = handle_export_report()
@@ -531,26 +531,26 @@ class TestHandleExportReport:
     @patch('builtins.print')
     def test_handle_export_report_filename_with_extension(self, mock_print, mock_input, mock_export):
         """test filename with extension is not duplicated"""
-        mock_input.side_effect = ["1", "1", "report.csv"]
+        mock_input.side_effect = ["1", "20", "1", "report.csv"]  # report, threshold, format, filename
         mock_export.return_value = (True, "Success")
         
         result = handle_export_report()
         
         assert result is True
-        mock_export.assert_called_once_with('low_stock', 'csv', 'report.csv')
+        mock_export.assert_called_once_with('low_stock', 'csv', 'report.csv', 20)
     
     @patch('src.app.export_report')
     @patch('builtins.input')
     @patch('builtins.print')
     def test_handle_export_report_json_with_extension(self, mock_print, mock_input, mock_export):
         """test json filename with extension is not duplicated"""
-        mock_input.side_effect = ["2", "2", "data.json"]
+        mock_input.side_effect = ["2", "2", "data.json"]  # no threshold for inventory
         mock_export.return_value = (True, "Success")
         
         result = handle_export_report()
         
         assert result is True
-        mock_export.assert_called_once_with('inventory', 'json', 'data.json')
+        mock_export.assert_called_once_with('inventory', 'json', 'data.json', 20)
 
 
 class TestManagerMenuExportReport:

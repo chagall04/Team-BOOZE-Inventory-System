@@ -220,8 +220,19 @@ def handle_export_report():
     print(f"{Fore.WHITE}[2]{Style.RESET_ALL} Inventory Report")
     report_choice = input(ENTER_CHOICE_PROMPT).strip()
     
+    threshold = 20  # default threshold
     if report_choice == '1':
         report_type = 'low_stock'
+        # prompt for threshold
+        threshold_input = input(
+            f"{Fore.YELLOW}Enter stock threshold (default 20): {Style.RESET_ALL}"
+        ).strip()
+        if threshold_input:
+            try:
+                threshold = int(threshold_input)
+            except ValueError:
+                print(f"{Fore.YELLOW}Invalid threshold. Using default of 20.{Style.RESET_ALL}")
+                threshold = 20
     elif report_choice == '2':
         report_type = 'inventory'
     else:
@@ -255,7 +266,7 @@ def handle_export_report():
     full_filename = filename if filename.endswith(extension) else filename + extension
     
     # perform the export
-    success, message = export_report(report_type, file_format, full_filename)
+    success, message = export_report(report_type, file_format, full_filename, threshold)
     
     if success:
         print(f"\n{Fore.GREEN}{message}{Style.RESET_ALL}")

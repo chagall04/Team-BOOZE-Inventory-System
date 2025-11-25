@@ -191,7 +191,7 @@ def is_protected_filename(filename):
     return base_name.lower() in [f.lower() for f in PROTECTED_FILES]
 
 
-def export_report(report_type, file_format, filename):
+def export_report(report_type, file_format, filename, threshold=20):
     """
     main export function - orchestrates data prep and file export
     
@@ -199,6 +199,7 @@ def export_report(report_type, file_format, filename):
         report_type: 'low_stock' or 'inventory'
         file_format: 'csv' or 'json'
         filename: output filename
+        threshold: stock threshold for low_stock report (default 20)
     
     returns:
         tuple (success: bool, message: str)
@@ -209,7 +210,7 @@ def export_report(report_type, file_format, filename):
     
     # prepare data based on report type
     if report_type == 'low_stock':
-        data = get_low_stock_report(20)  # default threshold
+        data = get_low_stock_report(threshold)
     elif report_type == 'inventory':
         data = get_all_products()
     else:
