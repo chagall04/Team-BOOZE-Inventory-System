@@ -57,9 +57,6 @@ def check_stock_availability(product_id, requested_quantity, cart=None):
     if product is None:
         return False, None, f"Product with ID {product_id} not found"
 
-    # Type assertion: product is not None beyond this point
-    assert product is not None
-
     # Calculate quantity already in cart for this product
     cart_quantity = 0
     if cart:
@@ -147,9 +144,6 @@ def handle_add_item_to_cart(cart):
     if not is_available:
         print(f"Error: {error}")
         return
-
-    # Type assertion: product is not None when is_available is True
-    assert product is not None
 
     # Add to cart
     cart.append({
@@ -325,5 +319,5 @@ def view_last_transaction():
     return True
 
 
-# --- Backlog (Not in Sprint 1) ---
-# SCRUM-13 (View Sales History) will be implemented here in a future sprint.
+# --- Backlog ---
+# SCRUM-13 (View Sales History) - future sprint

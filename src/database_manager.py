@@ -164,49 +164,6 @@ def get_product_details(product_id):
     return None
 
 
-def start_transaction(total_amount):
-    """
-    scrum-36: create new transaction record
-    returns transaction_id on success, None on failure
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute(
-            "INSERT INTO transactions (timestamp, total_amount) VALUES (?, ?)",
-            (timestamp, total_amount)
-        )
-        conn.commit()
-        transaction_id = cursor.lastrowid
-        return transaction_id
-    except sqlite3.Error:
-        return None
-    finally:
-        conn.close()
-
-
-def log_item_sale(transaction_id, product_id, quantity, price_at_sale):
-    """
-    scrum-36: create transaction_items record
-    returns True on success, False on failure
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            """INSERT INTO transaction_items
-               (transaction_id, product_id, quantity, price_at_sale)
-               VALUES (?, ?, ?, ?)""",
-            (transaction_id, product_id, quantity, price_at_sale)
-        )
-        conn.commit()
-        return True
-    except sqlite3.Error:
-        return False
-    finally:
-        conn.close()
-
 # low stock reporting functions (scrum-14, scrum-56)
 def get_low_stock_report(threshold):
     """
