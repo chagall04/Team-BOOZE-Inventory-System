@@ -337,6 +337,18 @@ class TestClerkMenu:
         mock_view_txn.assert_called_once()
         mock_input.assert_called()
 
+    @patch('src.app.view_last_transaction')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_clerk_menu_view_last_sale(self, mock_print, mock_input, mock_view_last):
+        """test clerk can access view last sale (SCRUM-71)"""
+        mock_input.side_effect = ["6", "0"]
+        
+        show_clerk_menu()
+        
+        mock_view_last.assert_called_once()
+        mock_input.assert_called()
+
 
 class TestManagerMenuTransactionDetails:
     """test class for manager menu transaction details (scrum-64)"""

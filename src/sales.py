@@ -14,6 +14,9 @@ from src.database_manager import (
 # Constants
 SALE_CANCELLED_MSG = "Sale cancelled."
 
+# scrum-72: store last successfully completed transaction ID
+LAST_TRANSACTION_ID = None
+
 
 def validate_product_input(product_id_str):
     """
@@ -102,6 +105,8 @@ def process_sale(cart):
     creates transaction record, logs items, and updates inventory atomically
     returns (success, message)
     """
+    global LAST_TRANSACTION_ID   # scrum-72  # pylint: disable=global-statement
+
     if not cart:
         return False, "Cannot process empty cart"
 
@@ -112,7 +117,10 @@ def process_sale(cart):
     success, result = process_sale_transaction(cart, total_amount)
 
     if success:
+        # scrum-72: save last completed transaction ID
+        LAST_TRANSACTION_ID = result
         return True, f"Sale completed successfully! Transaction ID: {result}"
+
     return False, f"Sale failed: {result}"
 
 
@@ -178,7 +186,6 @@ def handle_complete_sale(cart):
     return False
 
 
-
 def record_sale():
     """
     Handles the logic for SCRUM-12: "As a Store Clerk, I want to record a
@@ -220,18 +227,41 @@ def record_sale():
             print("Invalid choice. Please try again.")
 
 
+def print_receipt(transaction, items, title="TRANSACTION RECEIPT"):
+    """
+    Helper function to print formatted receipt
+    Reduces code duplication between view_transaction_details and view_last_transaction
+    """
+    print("\n" + "=" * 50)
+    print(title)
+    print("=" * 50)
+    print(f"Transaction ID: {transaction['id']}")
+    print(f"Date/Time: {transaction['timestamp']}")
+    print("-" * 50)
+    print(f"{'Item':<30} {'Qty':<5} {'Price':<10} {'Total':<10}")
+    print("-" * 50)
+
+    for item in items:
+        item_total = item['quantity'] * item['price_at_sale']
+        print(f"{item['name']:<30} {item['quantity']:<5} "
+              f"€{item['price_at_sale']:<9.2f} €{item_total:<9.2f}")
+
+    print("-" * 50)
+    print(f"{'TOTAL:':<46} €{transaction['total_amount']:.2f}")
+    print("=" * 50)
+
+
 def view_transaction_details():
     """
-    scrum-63: view detailed receipt for a specific transaction ID
-    
-    implementation:
-    - prompts user for transaction ID
-    - calls get_transaction_by_id() to retrieve main transaction details
-    - calls get_items_for_transaction() to retrieve all items
-    - prints formatted receipt with EUR currency
-    
-    returns:
-        bool: True if transaction was found and displayed, False otherwise
+    scrum-63: View detailed receipt for a specific transaction ID.
+
+    Prompts the user to enter a transaction ID, validates the input,
+    retrieves the transaction and its items from the database, and prints
+    a formatted receipt to the console.
+
+    Returns:
+        True if the transaction details were successfully displayed,
+        False if there was an error (e.g., invalid input, transaction not found).
     """
     print("\n=== View Transaction Details ===")
     
@@ -262,24 +292,36 @@ def view_transaction_details():
         return False
     
     # print formatted receipt
-    print("\n" + "=" * 50)
-    print("TRANSACTION RECEIPT")
-    print("=" * 50)
-    print(f"Transaction ID: {transaction['id']}")
-    print(f"Date/Time: {transaction['timestamp']}")
-    print("-" * 50)
-    print(f"{'Item':<30} {'Qty':<5} {'Price':<10} {'Total':<10}")
-    print("-" * 50)
+    print_receipt(transaction, items, "TRANSACTION RECEIPT")
     
-    for item in items:
-        item_total = item['quantity'] * item['price_at_sale']
-        print(f"{item['name']:<30} {item['quantity']:<5} "
-              f"€{item['price_at_sale']:<9.2f} €{item_total:<9.2f}")
-    
-    print("-" * 50)
-    print(f"{'TOTAL:':<46} €{transaction['total_amount']:.2f}")
-    print("=" * 50)
-    
+    return True
+
+
+def view_last_transaction():
+    """
+    scrum-71: view receipt for the most recent completed sale
+    """
+    print("\n=== View Last Sale ===")
+
+    if LAST_TRANSACTION_ID is None:
+        print("No previous sale found.")
+        return False
+
+    # retrieve transaction details
+    transaction = get_transaction_by_id(LAST_TRANSACTION_ID)
+    if transaction is None:
+        print("Error: Last transaction could not be retrieved")
+        return False
+
+    # retrieve items for the transaction
+    items = get_items_for_transaction(LAST_TRANSACTION_ID)
+    if not items:
+        print("Error: No items found for last transaction")
+        return False
+
+    # print formatted receipt
+    print_receipt(transaction, items, "LAST TRANSACTION RECEIPT")
+
     return True
 
 

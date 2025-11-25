@@ -6,7 +6,7 @@ This module handles the user interface and menu navigation.
 
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
-from .sales import record_sale, view_transaction_details
+from .sales import record_sale, view_transaction_details, view_last_transaction  # scrum-74: added view_last_transaction
 from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
 from .reporting import generate_low_stock_report, view_total_inventory_value
 
@@ -62,6 +62,7 @@ def handle_delete_account():
     print(f"\nError: {message}")
     return False
 
+
 def show_manager_menu():
     """display menu for manager role"""
     print("\n--- MANAGER MENU ---")
@@ -102,6 +103,7 @@ def show_manager_menu():
         else:
             print(INVALID_CHOICE_MSG)
 
+
 def show_clerk_menu():
     """display menu for clerk role"""
     print("\n--- CLERK MENU ---")
@@ -111,6 +113,7 @@ def show_clerk_menu():
         print("[3] View Product Stock (Inventory Tracking)")
         print("[4] Log Product Loss (Inventory Tracking)")
         print("[5] View Transaction Details (Sales Management)")
+        print("[6] View Last Sale (Sales Management)")  # scrum-74: added menu option
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -126,11 +129,15 @@ def show_clerk_menu():
         elif choice == '5':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
+        elif choice == '6':
+            # scrum-74: call new last sale function
+            view_last_transaction()
         elif choice == '0':
             print("Logging out...")
             break
         else:
             print(INVALID_CHOICE_MSG)
+
 
 def main():
     """
@@ -176,6 +183,7 @@ def main():
 
         else:
             print(INVALID_CHOICE_MSG)
+
 
 if __name__ == "__main__":
     main()

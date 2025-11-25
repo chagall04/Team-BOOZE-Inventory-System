@@ -5,9 +5,17 @@
 """Tests for database operations including users, products, and transactions."""
 
 import sqlite3
-import pytest
 from unittest.mock import patch, MagicMock
-from src.database_manager import get_user_by_username, create_user, delete_user, insert_product, get_all_products
+
+import pytest
+
+from src.database_manager import (
+    get_user_by_username,
+    create_user,
+    delete_user,
+    insert_product,
+    get_all_products
+)
 
 
 
@@ -811,7 +819,7 @@ def test_get_all_products_empty_database(mock_get_db):
     
     products = get_all_products()
     
-    assert products == []
+    assert not products
     assert isinstance(products, list)
     mock_conn.close.assert_called_once()
 
@@ -899,7 +907,7 @@ def test_get_all_products_handles_database_error(mock_get_db):
     
     products = get_all_products()
     
-    assert products == []
+    assert not products
     assert isinstance(products, list)
     mock_conn.close.assert_called_once()
 
@@ -1109,7 +1117,7 @@ class TestGetLowStockReport:
         
         result = get_low_stock_report(20)
         
-        assert result == []
+        assert not result
         assert isinstance(result, list)
         mock_conn.close.assert_called_once()
     
@@ -1126,7 +1134,7 @@ class TestGetLowStockReport:
         
         result = get_low_stock_report(20)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
 
 
@@ -1241,7 +1249,7 @@ class TestGetItemsForTransaction:
         
         result = get_items_for_transaction(123)
         
-        assert result == []
+        assert not result
         assert isinstance(result, list)
         mock_conn.close.assert_called_once()
     
@@ -1258,8 +1266,5 @@ class TestGetItemsForTransaction:
         
         result = get_items_for_transaction(123)
         
-        assert result == []
+        assert not result
         mock_conn.close.assert_called_once()
-
-
-
