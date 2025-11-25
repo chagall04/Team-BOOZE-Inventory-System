@@ -5,6 +5,7 @@ This module handles the user interface and menu navigation.
 """
 
 from datetime import datetime
+from getpass import getpass
 
 from colorama import init, Fore, Style
 
@@ -128,7 +129,8 @@ def handle_create_account():
     """handle account creation flow"""
     print(f"\n{Fore.CYAN}=== Create New Account ==={Style.RESET_ALL}")
     username = input(f"{Fore.YELLOW}Username (min 3 characters): {Style.RESET_ALL}")
-    password = input(f"{Fore.YELLOW}Password (min 6 characters): {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Password (min 6 characters): {Style.RESET_ALL}", end="", flush=True)
+    password = getpass("")
     print(f"Role options: {Fore.MAGENTA}Manager{Style.RESET_ALL}, {Fore.BLUE}Clerk{Style.RESET_ALL}")
     role = input(f"{Fore.YELLOW}Role: {Style.RESET_ALL}")
 
@@ -152,7 +154,8 @@ def handle_delete_account():
         print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
         return False
     
-    password = input(f"{Fore.YELLOW}Password: {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Password: {Style.RESET_ALL}", end="", flush=True)
+    password = getpass("")
     if is_quit(password):
         print(f"{Fore.YELLOW}Cancelled.{Style.RESET_ALL}")
         return False
@@ -352,7 +355,8 @@ def main():
             if is_quit(username):
                 continue
             
-            password = input(f"{Fore.YELLOW}Password: {Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}Password: {Style.RESET_ALL}", end="", flush=True)
+            password = getpass("")
             if is_quit(password):
                 continue
 

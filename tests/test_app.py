@@ -36,11 +36,13 @@ class TestHandleCreateAccount:
     """test class for create account handler"""
     
     @patch('src.app.create_account')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_handle_create_account_success(self, mock_print, mock_input, mock_create):
+    def test_handle_create_account_success(self, mock_print, mock_input, mock_getpass, mock_create):
         """test successful account creation"""
-        mock_input.side_effect = ["newuser", "password123", "Clerk"]
+        mock_input.side_effect = ["newuser", "Clerk"]
+        mock_getpass.return_value = "password123"
         mock_create.return_value = (True, "account created successfully")
         
         result = handle_create_account()
@@ -49,11 +51,13 @@ class TestHandleCreateAccount:
         mock_create.assert_called_once_with("newuser", "password123", "Clerk")
     
     @patch('src.app.create_account')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_handle_create_account_failure(self, mock_print, mock_input, mock_create):
+    def test_handle_create_account_failure(self, mock_print, mock_input, mock_getpass, mock_create):
         """test failed account creation"""
-        mock_input.side_effect = ["ab", "12345", "Clerk"]
+        mock_input.side_effect = ["ab", "Clerk"]
+        mock_getpass.return_value = "12345"
         mock_create.return_value = (False, "username must be at least 3 characters")
         
         result = handle_create_account()
@@ -65,11 +69,13 @@ class TestHandleDeleteAccount:
     """test class for delete account handler"""
     
     @patch('src.app.delete_account')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_handle_delete_account_success(self, mock_print, mock_input, mock_delete):
+    def test_handle_delete_account_success(self, mock_print, mock_input, mock_getpass, mock_delete):
         """test successful account deletion with confirmation"""
-        mock_input.side_effect = ["testuser", "password123", "yes"]
+        mock_input.side_effect = ["testuser", "yes"]
+        mock_getpass.return_value = "password123"
         mock_delete.return_value = (True, "user deleted")
         
         result = handle_delete_account()
@@ -78,11 +84,13 @@ class TestHandleDeleteAccount:
         mock_delete.assert_called_once_with("testuser", "password123")
     
     @patch('src.app.delete_account')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_handle_delete_account_failure(self, mock_print, mock_input, mock_delete):
+    def test_handle_delete_account_failure(self, mock_print, mock_input, mock_getpass, mock_delete):
         """test failed account deletion"""
-        mock_input.side_effect = ["testuser", "wrongpass", "yes"]
+        mock_input.side_effect = ["testuser", "yes"]
+        mock_getpass.return_value = "wrongpass"
         mock_delete.return_value = (False, "incorrect password")
         
         result = handle_delete_account()
@@ -90,11 +98,13 @@ class TestHandleDeleteAccount:
         assert result is False
     
     @patch('src.app.delete_account')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_handle_delete_account_cancelled(self, mock_print, mock_input, mock_delete):
+    def test_handle_delete_account_cancelled(self, mock_print, mock_input, mock_getpass, mock_delete):
         """test account deletion cancelled by user"""
-        mock_input.side_effect = ["testuser", "password123", "no"]
+        mock_input.side_effect = ["testuser", "no"]
+        mock_getpass.return_value = "password123"
         
         result = handle_delete_account()
         
@@ -117,12 +127,14 @@ class TestMain:
     
     @patch('src.app.show_account_menu')
     @patch('src.app.login')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_main_manager_login_success(self, mock_print, mock_input, mock_login, mock_menu):
+    def test_main_manager_login_success(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu):
         """test successful manager login flow"""
         mock_menu.side_effect = ["1", "0"]
-        mock_input.side_effect = ["manager", "manager123", "0"]
+        mock_input.side_effect = ["manager", "0"]
+        mock_getpass.return_value = "manager123"
         mock_login.return_value = "Manager"
         
         main()
@@ -131,12 +143,14 @@ class TestMain:
     
     @patch('src.app.show_account_menu')
     @patch('src.app.login')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_main_clerk_login_success(self, mock_print, mock_input, mock_login, mock_menu):
+    def test_main_clerk_login_success(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu):
         """test successful clerk login flow"""
         mock_menu.side_effect = ["1", "0"]
-        mock_input.side_effect = ["clerk", "clerk123", "0"]
+        mock_input.side_effect = ["clerk", "0"]
+        mock_getpass.return_value = "clerk123"
         mock_login.return_value = "Clerk"
         
         main()
@@ -145,12 +159,14 @@ class TestMain:
     
     @patch('src.app.show_account_menu')
     @patch('src.app.login')
+    @patch('src.app.getpass')
     @patch('builtins.input')
     @patch('builtins.print')
-    def test_main_login_failure(self, mock_print, mock_input, mock_login, mock_menu):
+    def test_main_login_failure(self, mock_print, mock_input, mock_getpass, mock_login, mock_menu):
         """test failed login shows access denied"""
         mock_menu.side_effect = ["1", "0"]
-        mock_input.side_effect = ["baduser", "badpass"]
+        mock_input.side_effect = ["baduser"]
+        mock_getpass.return_value = "badpass"
         mock_login.return_value = None
         
         main()
