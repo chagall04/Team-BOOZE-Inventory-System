@@ -14,7 +14,8 @@ from src.database_manager import (
     create_user,
     delete_user,
     insert_product,
-    get_all_products
+    get_all_products,
+    search_products_by_term
 )
 
 
@@ -1200,4 +1201,78 @@ class TestGetItemsForTransaction:
         result = get_items_for_transaction(123)
         
         assert result == []
+        mock_conn.close.assert_called_once()
+
+
+# SCRUM-67 Product Search Database Tests
+class TestSearchProductsByTerm:
+    """test class for search_products_by_term database function"""
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_success(self, mock_get_db):
+        """test successful product search"""
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        
+        mock_rows = [
+            {
+                "id": 1,
+                "name": "Vodka",
+                "brand": "Smirnoff",
+                "quantity_on_hand": 10,
+                "price": 15.00
+            },
+            {
+                "id": 2,
+                "name": "Flavored Vodka",
+                "brand": "Absolut",
+                "quantity_on_hand": 5,
+                "price": 18.00
+            }
+        ]
+        mock_cursor.fetchall.return_value = mock_rows
+        
+        result = search_products_by_term("vodka")
+        
+        assert len(result) == 2
+        assert result[0]["name"] == "Vodka"
+        assert result[1]["name"] == "Flavored Vodka"
+        # Verify wildcards were added
+        call_args = mock_cursor.execute.call_args[0]
+        assert "%vodka%" in call_args[1]
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_no_results(self, mock_get_db):
+        """test search with no matching products"""
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = []
+        
+        result = search_products_by_term("unknownbrand")
+        
+        assert not result
+        assert isinstance(result, list)
+        mock_conn.close.assert_called_once()
+    
+    @patch('src.database_manager.get_db_connection')
+    def test_search_products_by_term_database_error(self, mock_get_db):
+        """test error handling returns empty list"""
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_get_db.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.execute.side_effect = sqlite3.Error("Database error")
+        
+        
+        result = search_products_by_term("vodka")
+        
+        assert not result
         mock_conn.close.assert_called_once()

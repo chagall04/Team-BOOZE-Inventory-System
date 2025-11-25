@@ -351,6 +351,18 @@ class TestClerkMenu:
         mock_view_last.assert_called_once()
         mock_input.assert_called()
 
+    @patch('src.app.search_products')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_clerk_menu_search_products(self, mock_print, mock_input, mock_search):
+        """test clerk can access search products (SCRUM-66)"""
+        mock_input.side_effect = ["7", "0"]
+        
+        show_clerk_menu()
+        
+        mock_search.assert_called_once()
+        mock_input.assert_called()
+
 
 class TestManagerMenuTransactionDetails:
     """test class for manager menu transaction details (scrum-64)"""

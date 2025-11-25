@@ -400,8 +400,6 @@ def process_sale_transaction(cart_items, total_amount):
     finally:
         conn.close()
 
-
-
 def update_product_details(product_id, data):
     """Update existing product details in the database
     
@@ -484,5 +482,24 @@ def get_total_inventory_value():
         return float(result[0])
     except sqlite3.Error:
         return 0.00
+    finally:
+        conn.close()
+
+
+def search_products_by_term(search_term):
+    """Search products by name or brand"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT id, name, brand, quantity_on_hand, price
+            FROM booze
+            WHERE name LIKE ? OR brand LIKE ?
+            ORDER BY name
+        """, (f"%{search_term}%", f"%{search_term}%"))
+        results = cursor.fetchall()
+        return [dict(row) for row in results]
+    except sqlite3.Error:
+        return []
     finally:
         conn.close()

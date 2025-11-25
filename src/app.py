@@ -7,7 +7,7 @@ This module handles the user interface and menu navigation.
 from .auth import login, create_account, delete_account
 from .product_management import add_new_product
 from .sales import record_sale, view_transaction_details, view_last_transaction  # scrum-74: added view_last_transaction
-from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
+from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss, search_products
 from .reporting import (
     generate_low_stock_report,
     view_total_inventory_value,
@@ -191,6 +191,7 @@ def show_clerk_menu():
         print("[4] Log Product Loss (Inventory Tracking)")
         print("[5] View Transaction Details (Sales Management)")
         print("[6] View Last Sale (Sales Management)")  # scrum-74: added menu option
+        print("[7] Search Products (Inventory Tracking)")  # scrum-66: product search
         print("[0] Log Out")
         choice = input(ENTER_CHOICE_PROMPT)
 
@@ -209,6 +210,9 @@ def show_clerk_menu():
         elif choice == '6':
             # scrum-74: call new last sale function
             view_last_transaction()
+        elif choice == '7':
+            # scrum-69: search products (SCRUM-66)
+            search_products()
         elif choice == '0':
             print("Logging out...")
             break
