@@ -237,6 +237,3 @@ def search_products():
         
     print("-" * 75)
     return True
-
-# --- Backlog (Not in Sprint 1) ---
-# SCRUM-10 (Log Product Loss) has been implemented above.
