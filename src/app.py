@@ -12,14 +12,14 @@ from getpass import getpass
 from colorama import init, Fore, Style
 
 from .auth import login, create_account, delete_account
-from .product_management import add_new_product
+from .product_management import add_new_product, view_all_products, update_product_cli
 from .sales import (
     record_sale,
     view_transaction_details,
     view_last_transaction,
     view_sales_history  # scrum-15: added view_sales_history
 )
-from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss
+from .inventory_tracking import receive_new_stock, view_current_stock, log_product_loss, search_products
 from .reporting import (
     generate_low_stock_report,
     view_total_inventory_value,
@@ -273,30 +273,38 @@ def show_manager_menu():
     show_session_header()
     
     while True:
-        print(f"\n{Fore.WHITE}[1]{Style.RESET_ALL} Add/Update Product {Fore.CYAN}(Product Management){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[2]{Style.RESET_ALL} View Inventory Report {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[3]{Style.RESET_ALL} View Sales History {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[4]{Style.RESET_ALL} View Transaction Details {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"\n{Fore.WHITE}[1]{Style.RESET_ALL} Add New Product {Fore.CYAN}(Product Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[2]{Style.RESET_ALL} Update Product {Fore.CYAN}(Product Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[3]{Style.RESET_ALL} View All Products {Fore.CYAN}(Product Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[4]{Style.RESET_ALL} View Low Stock Report {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
         print(f"{Fore.WHITE}[5]{Style.RESET_ALL} View Total Inventory Value {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[6]{Style.RESET_ALL} Export Report {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[6]{Style.RESET_ALL} View Sales History {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[7]{Style.RESET_ALL} View Transaction Details {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[8]{Style.RESET_ALL} Export Report {Fore.CYAN}(Reporting & Analytics){Style.RESET_ALL}")
         print(f"{Fore.WHITE}[0]{Style.RESET_ALL} Log Out  {Fore.WHITE}[Q]{Style.RESET_ALL} Quit")
         choice = normalize_choice(input(ENTER_CHOICE_PROMPT))
 
         if choice == '1':
             add_new_product()
         elif choice == '2':
+            # scrum-6: update existing product
+            update_product_cli()
+        elif choice == '3':
+            # scrum-46: view all products
+            view_all_products()
+        elif choice == '4':
             # scrum-58: hook up low stock report (SCRUM-14)
             handle_view_low_stock_report()
-        elif choice == '3':
-            # scrum-15: view sales history
-            view_sales_history()
-        elif choice == '4':
-            # scrum-64: view transaction details (SCRUM-60)
-            view_transaction_details()
         elif choice == '5':
             # view total inventory value report
             view_total_inventory_value()
         elif choice == '6':
+            # scrum-15: view sales history
+            view_sales_history()
+        elif choice == '7':
+            # scrum-64: view transaction details (SCRUM-60)
+            view_transaction_details()
+        elif choice == '8':
             # scrum-16: export report to file
             handle_export_report()
         elif choice in ('0', 'Q', 'QUIT'):
@@ -317,9 +325,10 @@ def show_clerk_menu():
         print(f"\n{Fore.WHITE}[1]{Style.RESET_ALL} Record a Sale {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
         print(f"{Fore.WHITE}[2]{Style.RESET_ALL} Receive New Stock {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
         print(f"{Fore.WHITE}[3]{Style.RESET_ALL} View Product Stock {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[4]{Style.RESET_ALL} Log Product Loss {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[5]{Style.RESET_ALL} View Transaction Details {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
-        print(f"{Fore.WHITE}[6]{Style.RESET_ALL} View Last Sale {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[4]{Style.RESET_ALL} Search Products {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[5]{Style.RESET_ALL} Log Product Loss {Fore.CYAN}(Inventory Tracking){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[6]{Style.RESET_ALL} View Transaction Details {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
+        print(f"{Fore.WHITE}[7]{Style.RESET_ALL} View Last Sale {Fore.CYAN}(Sales Management){Style.RESET_ALL}")
         print(f"{Fore.WHITE}[0]{Style.RESET_ALL} Log Out  {Fore.WHITE}[Q]{Style.RESET_ALL} Quit")
         choice = normalize_choice(input(ENTER_CHOICE_PROMPT))
 
@@ -330,12 +339,15 @@ def show_clerk_menu():
         elif choice == '3':
             view_current_stock()
         elif choice == '4':
+            # scrum-66: search products by name/brand
+            search_products()
+        elif choice == '5':
             # scrum-51 & scrum-48: log product loss (SCRUM-10)
             log_product_loss()
-        elif choice == '5':
+        elif choice == '6':
             # scrum-64: view transaction details (SCRUM-60)
             view_transaction_details()
-        elif choice == '6':
+        elif choice == '7':
             # scrum-74: call new last sale function
             view_last_transaction()
         elif choice in ('0', 'Q', 'QUIT'):

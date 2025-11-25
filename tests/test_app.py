@@ -257,7 +257,7 @@ class TestManagerMenu:
     @patch('builtins.print')
     def test_manager_menu_view_inventory_report(self, mock_print, mock_input, mock_report):
         """test manager can access inventory report (SCRUM-14, SCRUM-58)"""
-        mock_input.side_effect = ["2", "20", "0"]
+        mock_input.side_effect = ["4", "20", "0"]
         mock_report.return_value = "Low Stock Report"
         
         show_manager_menu()
@@ -270,7 +270,7 @@ class TestManagerMenu:
     @patch('builtins.print')
     def test_manager_menu_view_inventory_report_invalid_threshold(self, mock_print, mock_input, mock_report):
         """test manager menu handles invalid threshold input (SCRUM-14, SCRUM-58)"""
-        mock_input.side_effect = ["2", "invalid", "0"]
+        mock_input.side_effect = ["4", "invalid", "0"]
         mock_report.return_value = "Low Stock Report"
         
         show_manager_menu()
@@ -284,7 +284,7 @@ class TestManagerMenu:
     @patch('builtins.print')
     def test_manager_menu_view_sales_history(self, mock_print, mock_input, mock_view_history):
         """test manager can access sales history (scrum-15)"""
-        mock_input.side_effect = ["3", "0"]
+        mock_input.side_effect = ["6", "0"]
         mock_view_history.return_value = True
         
         show_manager_menu()
@@ -380,7 +380,7 @@ class TestClerkMenu:
     @patch('builtins.print')
     def test_clerk_menu_log_product_loss(self, mock_print, mock_input, mock_log_loss):
         """test clerk can access log product loss (scrum-10)"""
-        mock_input.side_effect = ["4", "0"]
+        mock_input.side_effect = ["5", "0"]
         
         show_clerk_menu()
         
@@ -392,7 +392,7 @@ class TestClerkMenu:
     @patch('builtins.print')
     def test_clerk_menu_view_transaction_details(self, mock_print, mock_input, mock_view_txn):
         """test clerk can access view transaction details (scrum-64)"""
-        mock_input.side_effect = ["5", "0"]
+        mock_input.side_effect = ["6", "0"]
         
         show_clerk_menu()
         
@@ -404,7 +404,7 @@ class TestClerkMenu:
     @patch('builtins.print')
     def test_clerk_menu_view_last_sale(self, mock_print, mock_input, mock_view_last):
         """test clerk can access view last sale (SCRUM-71)"""
-        mock_input.side_effect = ["6", "0"]
+        mock_input.side_effect = ["7", "0"]
         
         show_clerk_menu()
         
@@ -420,7 +420,7 @@ class TestManagerMenuTransactionDetails:
     @patch('builtins.print')
     def test_manager_menu_view_transaction_details(self, mock_print, mock_input, mock_view_txn):
         """test manager can access view transaction details"""
-        mock_input.side_effect = ["4", "0"]
+        mock_input.side_effect = ["7", "0"]
         
         show_manager_menu()
         
@@ -561,7 +561,7 @@ class TestManagerMenuExportReport:
     @patch('builtins.print')
     def test_manager_menu_export_report(self, mock_print, mock_input, mock_export):
         """test manager can access export report option"""
-        mock_input.side_effect = ["6", "0"]
+        mock_input.side_effect = ["8", "0"]
         mock_export.return_value = True
         
         show_manager_menu()
