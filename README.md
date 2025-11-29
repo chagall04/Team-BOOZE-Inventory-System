@@ -39,14 +39,14 @@ The system provides core inventory tracking, product management, sales processin
 - View Last Sale
 
 ### User Experience
-- 🎨 **Colour-coded CLI** - Intuitive colored menus and messages
-- 📊 **Dashboard** - Quick stats displayed on login (total products, inventory value, today's sales, low stock items)
-- 🔐 **Secure Password Input** - Hidden password entry using `getpass`
-- 👤 **Session Display** - Shows logged-in user and role in menu headers
-- ⌨️ **Quick Cancel** - Enter `[Q]` to quit/cancel any operation
-- ✅ **Confirmation Prompts** - Before destructive actions (delete account, exit)
-- 🔠 **Flexible Input** - Case-insensitive menu choices, `Y/N` or `yes/no` for confirmations
-- 💬 **Helpful Error Messages** - Specific errors with actionable hints
+-  **Colour-coded CLI** - Intuitive coloured menus and messages
+-  **Dashboard** - Quick stats displayed on login (total products, inventory value, today's sales, low stock items)
+-  **Secure Password Input** - Hidden password entry using `getpass`
+-  **Session Display** - Shows logged-in user and role in menu headers
+-  **Quick Cancel** - Enter `[Q]` to quit/cancel any operation
+-  **Confirmation Prompts** - Before destructive actions (delete account, exit)
+-  **Flexible Input** - Case-insensitive menu choices, `Y/N` or `yes/no` for confirmations
+-  **Helpful Error Messages** - Specific errors with actionable hints
 
 ---
 
