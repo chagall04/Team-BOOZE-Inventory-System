@@ -1,6 +1,6 @@
 # Team BOOZE Inventory System
 
-> **Version 1.0.0** | A Liquor Store Inventory Management System
+> | A Liquor Store Inventory Management System
 
 ## Project Overview
 
@@ -39,7 +39,7 @@ The system provides core inventory tracking, product management, sales processin
 - View Last Sale
 
 ### User Experience
-- 🎨 **Color-coded CLI** - Intuitive colored menus and messages
+- 🎨 **Colour-coded CLI** - Intuitive colored menus and messages
 - 📊 **Dashboard** - Quick stats displayed on login (total products, inventory value, today's sales, low stock items)
 - 🔐 **Secure Password Input** - Hidden password entry using `getpass`
 - 👤 **Session Display** - Shows logged-in user and role in menu headers
